@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory }) => {
+const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory, onEditCategory }) => {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#6a82fb'); // Cor padrão mais alinhada
 
@@ -9,6 +9,11 @@ const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory }) =
     if (!name.trim()) return; // Impede categorias vazias
     onAddCategory({ name: name.trim(), color });
     setName('');
+  };
+
+  const handleDeleteClick = (e, id) => {
+    e.stopPropagation(); // Impede que o clique dispare a edição da linha
+    onDeleteCategory(id, 'category');
   };
 
   return (
@@ -37,11 +42,15 @@ const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory }) =
           <p className="empty-message" style={{textAlign: 'left', padding: '10px 0'}}>Crie sua primeira categoria!</p>
         ) : (
           categories.map(cat => (
-            <li key={cat.id}>
-              <span className="color-dot" style={{ backgroundColor: cat.color }}></span>
-              {cat.name}
-              <button onClick={() => onDeleteCategory(cat.id)} aria-label={`Excluir categoria ${cat.name}`}>
-                ×
+            // Adiciona onClick na linha para chamar a edição
+            <li key={cat.id} onClick={() => onEditCategory(cat)}>
+              <div className="category-name-wrapper">
+                <span className="color-dot" style={{ backgroundColor: cat.color }}></span>
+                {cat.name}
+              </div>
+              {/* Botão de deletar separado */}
+              <button className="delete-button action-button" onClick={(e) => handleDeleteClick(e, cat.id)} aria-label={`Excluir categoria ${cat.name}`}>
+                🗑️
               </button>
             </li>
           ))
