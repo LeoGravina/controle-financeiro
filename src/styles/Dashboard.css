@@ -330,3 +330,36 @@ input:focus, select:focus, .currency-input:focus { outline: none; border-color: 
   background-color: #a5b4fc; /* Cor do check quando pago (despesa) */
   border-color: #a5b4fc;
 }
+
+.summary-card {
+  /* ... (estilos existentes) ... */
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  position: relative; /* Necessário para pseudo-elementos se usar */
+}
+
+/* Adiciona cursor pointer apenas aos clicáveis */
+.summary-card.clickable {
+  cursor: pointer;
+}
+
+/* O card de Saldo não é clicável */
+.summary-card[data-type="balance"] {
+  cursor: default;
+}
+
+/* Efeito de hover para cards clicáveis que NÃO ESTÃO ativos */
+.summary-card.clickable:not(.active):hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+}
+
+/* Estilo do card de filtro ATIVO */
+.summary-card.active {
+  transform: translateY(-5px) scale(1.02); /* Levemente maior e levantado */
+  box-shadow: 0 12px 25px rgba(106, 130, 251, 0.3); /* Sombra azulada mais forte */
+  border-left-width: 7px; /* Borda mais grossa para destaque */
+}
+
+/* Adapta a cor da borda ativa */
+.summary-card.active[data-type="income"] { border-left-color: var(--income-color); }
+.summary-card.active[data-type="expense"] { border-left-color: var(--expense-color); }

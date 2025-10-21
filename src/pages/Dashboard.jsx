@@ -2,17 +2,21 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, getDocs, writeBatch } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
+import { auth, db } from '../firebase/config.js';
 
-// Importando todos os componentes necessários (sem extensões de arquivo)
-import SummaryCard from '../components/SummaryCard';
-import MonthNavigator from '../components/MonthNavigator';
-import CategoryManager from '../components/CategoryManager';
-import TransactionForm from '../components/TransactionForm';
-import TransactionList from '../components/TransactionList';
-import ConfirmationModal from '../components/ConfirmationModal';
-import EditTransactionModal from '../components/EditTransactionModal';
-import EditCategoryModal from '../components/EditCategoryModal';
+// Importando todos os componentes necessários com caminhos e extensões corrigidos
+import SummaryCard from '../components/SummaryCard.jsx';
+import MonthNavigator from '../components/MonthNavigator.jsx';
+import CategoryManager from '../components/CategoryManager.jsx';
+import TransactionForm from '../components/TransactionForm.jsx';
+import TransactionList from '../components/TransactionList.jsx';
+import ConfirmationModal from '../components/ConfirmationModal.jsx';
+import EditTransactionModal from '../components/EditTransactionModal.jsx';
+import EditCategoryModal from '../components/EditCategoryModal.jsx';
+
+// Paletas de cores para os gráficos
+const COLORS_EXPENSE = ['#e74c3c', '#c0392b', '#f39c12', '#d35400', '#9b59b6'];
+const COLORS_INCOME = ['#27ae60', '#2ecc71', '#16a085', '#1abc9c', '#00b894'];
 
 // Componente para o Tooltip Personalizado do Gráfico
 const CustomTooltip = ({ active, payload }) => {
@@ -30,7 +34,7 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
-// --- FUNÇÃO AUXILIAR ATUALIZADA para incluir a cor ---
+// --- FUNÇÃO AUXILIAR PARA GERAR DADOS DO GRÁFICO ---
 const generateChartData = (transactions, type, categories) => {
     const filtered = transactions.filter(t => t.type === type);
     const total = filtered.reduce((acc, t) => acc + t.amount, 0);
@@ -69,6 +73,7 @@ const Dashboard = () => {
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
+    const [listFilter, setListFilter] = useState('all');
 
     // Efeito para gerenciar a autenticação do usuário
     useEffect(() => {
@@ -206,13 +211,17 @@ const Dashboard = () => {
             alert(`Não foi possível excluir o item. Tente novamente.`);
         }
     };
+    
+    const handleFilterClick = (filterType) => {
+        setListFilter(currentFilter => (currentFilter === filterType ? 'all' : filterType));
+    };
 
     const handleSignOut = () => signOut(auth);
 
     const openEditTransactionModal = (transaction) => { setEditingTransaction(transaction); setIsEditTransactionModalOpen(true); };
     const openEditCategoryModal = (category) => { setEditingCategory(category); setIsEditCategoryModalOpen(true); };
 
-    // --- CORREÇÃO: Todos os cálculos foram centralizados em um único useMemo ---
+    // --- Cálculos e Memos ---
     const {
         filteredTransactions,
         incomeTotal,
@@ -222,31 +231,28 @@ const Dashboard = () => {
         expenseChartData,
         incomeChartData,
     } = useMemo(() => {
-        // 1. Filtra as transações para o mês atual
-        const filtered = transactions.filter(t => 
-            new Date(t.date).getMonth() === currentMonth.getMonth() && 
-            new Date(t.date).getFullYear() === currentMonth.getFullYear()
-        );
-
-        // 2. Calcula os totais para os cards de resumo
+        const filtered = transactions.filter(t => new Date(t.date).getMonth() === currentMonth.getMonth() && new Date(t.date).getFullYear() === currentMonth.getFullYear());
         const income = filtered.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
         const paidExpense = filtered.filter(t => t.type === 'expense' && t.isPaid).reduce((acc, t) => acc + t.amount, 0);
         const toPayExpense = filtered.filter(t => t.type === 'expense' && !t.isPaid).reduce((acc, t) => acc + t.amount, 0);
-        
-        // 3. Calcula os dados para os gráficos
         const expenseData = generateChartData(filtered, 'expense', categories);
         const incomeData = generateChartData(filtered, 'income', categories);
-
         return {
             filteredTransactions: filtered,
-            incomeTotal: income,
-            expensePaid: paidExpense,
-            expenseToPay: toPayExpense,
+            incomeTotal: income, expensePaid: paidExpense, expenseToPay: toPayExpense,
             balance: income - paidExpense,
-            expenseChartData: expenseData,
-            incomeChartData: incomeData,
+            expenseChartData: expenseData, incomeChartData: incomeData,
         };
-    }, [transactions, currentMonth, categories]); // Dependências
+    }, [transactions, currentMonth, categories]);
+    
+    const transactionsForDisplay = useMemo(() => {
+        switch (listFilter) {
+            case 'income': return filteredTransactions.filter(t => t.type === 'income');
+            case 'paidExpense': return filteredTransactions.filter(t => t.type === 'expense' && t.isPaid);
+            case 'toPayExpense': return filteredTransactions.filter(t => t.type === 'expense' && !t.isPaid);
+            default: return filteredTransactions;
+        }
+    }, [listFilter, filteredTransactions]);
 
     if (loading) return <div style={{ textAlign: 'center', marginTop: '50px', fontSize: '1.2rem', color: '#6c757d' }}>Carregando dados...</div>;
 
@@ -268,9 +274,9 @@ const Dashboard = () => {
                 </header>
                 <main>
                     <div className="summary-grid">
-                        <SummaryCard title="Ganhos do Mês" value={incomeTotal} type="income" />
-                        <SummaryCard title="Despesas Pagas" value={expensePaid} type="expense" />
-                        <SummaryCard title="Despesas a Pagar" value={expenseToPay} type="expense" />
+                        <SummaryCard title="Ganhos do Mês" value={incomeTotal} type="income" onClick={() => handleFilterClick('income')} isActive={listFilter === 'income'} />
+                        <SummaryCard title="Despesas Pagas" value={expensePaid} type="expense" onClick={() => handleFilterClick('paidExpense')} isActive={listFilter === 'paidExpense'} />
+                        <SummaryCard title="Despesas a Pagar" value={expenseToPay} type="expense" onClick={() => handleFilterClick('toPayExpense')} isActive={listFilter === 'toPayExpense'} />
                         <SummaryCard title="Saldo (Ganhos - Pagos)" value={balance} type="balance" />
                     </div>
                     <div className="main-layout">
@@ -293,7 +299,7 @@ const Dashboard = () => {
                                     </ResponsiveContainer>
                                 ) : <p className="empty-message">Nenhum(a) {formType === 'expense' ? 'gasto' : 'ganho'} registrado neste mês para exibir no gráfico.</p>}
                             </div>
-                            <TransactionList transactions={filteredTransactions} categories={categories} onDeleteTransaction={(id) => handleDeleteRequest(id, 'transaction')} onEditTransaction={openEditTransactionModal} onTogglePaid={handleTogglePaidStatus} />
+                            <TransactionList transactions={transactionsForDisplay} categories={categories} onDeleteTransaction={(id) => handleDeleteRequest(id, 'transaction')} onEditTransaction={openEditTransactionModal} onTogglePaid={handleTogglePaidStatus} />
                         </div>
                     </div>
                 </main>

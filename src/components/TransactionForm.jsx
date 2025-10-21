@@ -68,12 +68,12 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
 
         <select value={category} onChange={(e) => setCategory(e.target.value)} required>
-          <option value="" disabled>-- Selecione uma categoria --</option>
+          <option value="" disabled>-- Categoria --</option>
           {categories.map(cat => ( <option key={cat.id} value={cat.id}>{cat.name}</option> ))}
         </select>
 
         <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} required>
-            <option value="" disabled>-- Selecione uma forma de pagamento --</option>
+            <option value="" disabled>-- Forma de pagamento --</option>
             <option value="debit">Cartão de Débito</option>
             <option value="credit">Cartão de Crédito</option>
             <option value="cash">Dinheiro</option>
