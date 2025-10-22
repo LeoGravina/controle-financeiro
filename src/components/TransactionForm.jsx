@@ -63,25 +63,24 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
       </div>
 
       <form onSubmit={handleSubmit} style={{marginTop: '0px'}}>
-        <input type="text" placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} required />
+        <input type="text" placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} />
         <CurrencyInput value={amount} onChange={setAmount} />
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-
+        <div className="form-row">
         <select value={category} onChange={(e) => setCategory(e.target.value)} required>
           <option value="" disabled>-- Categoria --</option>
           {categories.map(cat => ( <option key={cat.id} value={cat.id}>{cat.name}</option> ))}
         </select>
 
         <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} required>
-            <option value="" disabled>-- Forma de pagamento --</option>
+            <option value="" disabled>-- Pagamento --</option>
             <option value="debit">Cartão de Débito</option>
             <option value="credit">Cartão de Crédito</option>
             <option value="cash">Dinheiro</option>
             <option value="pix">Pix</option>
         </select>
+        </div>
 
-        {/* --- LÓGICA ATUALIZADA AQUI --- */}
-        {/* Mostra a seção de parcelamento APENAS se for GASTO e o método for DÉBITO ou CRÉDITO */}
         {type === 'expense' && (paymentMethod === 'credit' || paymentMethod === 'debit') && (
           <div className="installment-section">
             <label>
