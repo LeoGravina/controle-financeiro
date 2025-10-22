@@ -26,7 +26,7 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-c
 /* === LAYOUT PRINCIPAL === */
 .dashboard-container { padding: 30px; max-width: 1400px; margin: 30px auto; }
 .main-layout { display: grid; grid-template-columns: 400px 1fr; gap: 35px; margin-top: 30px; }
-.sidebar { display: flex; flex-direction: column; gap: 30px; }
+.sidebar { display: flex; flex-direction: column;}
 .content { display: flex; flex-direction: column;}
 
 /* === CABEÇALHO === */
@@ -134,10 +134,72 @@ select::-moz-focus-inner { border: 0; } select { -moz-appearance: none; text-ind
 }
 
 /* === ABAS SIDEBAR === */
-.sidebar-tabs { display: flex; margin-bottom: 25px; background-color: #e9ecef; padding: 5px; border-radius: var(--border-radius-lg); }
-.sidebar-tab-button { flex: 1; padding: 10px 15px; border: none; background-color: transparent; color: var(--text-light-color); border-radius: var(--border-radius-md); cursor: pointer; font-weight: 500; font-size: 0.9rem; text-align: center; transition: all var(--transition-std); }
-.sidebar-tab-button.active { background-color: var(--card-bg-color); color: var(--primary-color); font-weight: 600; box-shadow: var(--shadow-sm); }
-.sidebar-tab-button:not(.active):hover { color: var(--text-color); }
+.sidebar-tabs {
+  display: flex;
+  gap: 0; /* Remove gap */
+  margin-bottom: 0; /* Remove margem inferior */
+  position: relative;
+  z-index: 1;
+  border-bottom: 1px solid var(--border-color); /* Linha abaixo das abas */
+}
+.sidebar-tab-button {
+  flex: 1;
+  padding: 12px 15px; /* Ajusta padding */
+  border: 1px solid transparent; /* Borda transparente */
+  border-bottom: none; /* Remove borda inferior */
+  background-color: transparent;
+  color: var(--text-light-color);
+  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0; /* Cantos superiores */
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.95rem; /* Ajusta fonte */
+  text-align: center;
+  transition: all var(--transition-std);
+  position: relative;
+  bottom: -1px; /* Desce para cobrir a linha */
+  margin-right: 3px; /* Pequeno espaço entre */
+}
+.sidebar-tab-button.active {
+  background-color: var(--card-bg-color); /* Fundo branco ativo */
+  color: var(--primary-color);
+  font-weight: 600;
+  border-color: var(--border-color); /* Bordas visíveis */
+  border-bottom-color: var(--card-bg-color); /* Borda inferior some */
+  z-index: 2; /* Fica acima da linha */
+  box-shadow: none; /* Remove sombra padrão da aba ativa */
+}
+.sidebar-tab-button:not(.active):hover {
+  background-color: #e9ecef;
+  color: var(--text-color);
+}
+/* Container abaixo das abas para conectar visualmente */
+.sidebar-content-container {
+  border: 1px solid var(--border-color);
+  border-top: none; /* Remove borda superior */
+  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); /* Cantos inferiores */
+  margin-top: -1px; /* Sobe para encontrar a aba */
+  box-shadow: var(--shadow-md); /* Mantém a sombra */
+  overflow: hidden; /* Garante que o conteúdo não vaze */
+  /* Remove padding e background se os filhos já tiverem */
+  padding: 0;
+  background-color: transparent; /* Fundo transparente, os filhos terão fundo branco */
+}
+/* Primeira aba ativa conecta o canto esquerdo */
+.sidebar-tabs button.active:first-child + .sidebar-content-container {
+  border-top-left-radius: 0;
+}
+/* Última aba ativa conecta o canto direito */
+.sidebar-tabs button.active:last-child + .sidebar-content-container {
+  border-top-right-radius: 0;
+}
+/* Ajusta padding interno dos forms quando dentro do container */
+.sidebar-content-container .form-container,
+.sidebar-content-container .fixed-expenses-manager {
+    box-shadow: none; /* Remove sombra duplicada */
+    border-radius: 0; /* Remove borda interna */
+    border-top: none; /* Garante que não haja borda dupla */
+    padding-top: 25px; /* Adiciona padding superior interno */
+}
 
 /* === GERENCIADORES (CATEGORIA E GASTOS FIXOS) === */
 .category-manager, .fixed-expenses-manager { /* Estilos comuns */ }
@@ -165,12 +227,15 @@ select::-moz-focus-inner { border: 0; } select { -moz-appearance: none; text-ind
 
 /* === LISTA DE TRANSAÇÕES === */
 /* Abas da Lista */
-.transaction-view-tabs { display: flex; gap: 0; margin-bottom: 0; position: relative; z-index: 1; border-bottom: 1px solid var(--border-color); }
+transaction-view-tabs { display: flex; gap: 0; margin-bottom: 0; position: relative; z-index: 1; border-bottom: 1px solid var(--border-color); }
 .tab-button { padding: 12px 25px; border: 1px solid transparent; border-bottom: none; background-color: transparent; color: var(--text-light-color); border-radius: var(--border-radius-md) var(--border-radius-md) 0 0; cursor: pointer; font-weight: 500; font-size: 1rem; transition: all var(--transition-std); margin-right: 5px; position: relative; bottom: -1px; }
 .tab-button.active { background-color: var(--card-bg-color); color: var(--primary-color); font-weight: 600; border-color: var(--border-color); border-bottom-color: var(--card-bg-color); z-index: 2; }
 .tab-button:not(.active):hover { background-color: #e9ecef; color: var(--text-color); }
 /* Container da Lista Conectado */
-.list-container { border-radius: var(--border-radius-lg); position: relative; z-index: 0; border-top: none; border: 1px solid var(--border-color); border-top: none; }
+.list-container {
+  border-radius: var(--border-radius-lg); position: relative; z-index: 0; border-top: none;
+  border: 1px solid var(--border-color); border-top: none;
+}
 .transaction-view-tabs + .list-container { border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px; }
 .transaction-view-tabs button.active:first-child + .list-container { border-top-left-radius: 0; }
 .transaction-view-tabs button.active:last-child + .list-container { border-top-right-radius: 0; }

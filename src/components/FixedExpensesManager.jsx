@@ -1,9 +1,10 @@
-// NOVO: src/components/FixedExpensesManager.jsx
+// ATUALIZADO: src/components/FixedExpensesManager.jsx
 import React, { useState } from 'react';
-import CurrencyInput from './CurrencyInput.jsx';
+import CurrencyInput from './CurrencyInput';
 import { FaRegTrashAlt } from 'react-icons/fa';
 
-const FixedExpensesManager = ({ categories = [], onAddFixedExpense, fixedExpenses = [], onDeleteFixedExpense }) => {
+// Recebe a nova prop onEditFixedExpense
+const FixedExpensesManager = ({ categories = [], onAddFixedExpense, fixedExpenses = [], onDeleteFixedExpense, onEditFixedExpense }) => {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
@@ -22,10 +23,12 @@ const FixedExpensesManager = ({ categories = [], onAddFixedExpense, fixedExpense
       dayOfMonth: parseInt(dayOfMonth, 10),
     });
     // Limpa o formulário
-    setDescription('');
-    setAmount('');
-    setCategory('');
-    setDayOfMonth(1);
+    setDescription(''); setAmount(''); setCategory(''); setDayOfMonth(1);
+  };
+
+  const handleDeleteClick = (e, id) => {
+    e.stopPropagation(); // Impede o clique de disparar a edição
+    onDeleteFixedExpense(id);
   };
 
   return (
@@ -48,18 +51,19 @@ const FixedExpensesManager = ({ categories = [], onAddFixedExpense, fixedExpense
       <ul className="fixed-expense-list">
         {fixedExpenses.length > 0 ? (
           fixedExpenses.map(expense => (
-            <li key={expense.id}>
+            // Adiciona onClick na linha para chamar a edição
+            <li key={expense.id} onClick={() => onEditFixedExpense(expense)}>
               <div className="expense-info">
                 <span>{expense.description} - R$ {expense.amount.toFixed(2).replace('.', ',')}</span>
-                <small>Dia {expense.dayOfMonth} - {expense.category}</small>
+                <small>Todo dia {expense.dayOfMonth} - {expense.category}</small>
               </div>
-              <button className="delete-button" onClick={() => onDeleteFixedExpense(expense.id)}>
-                <FaRegTrashAlt />
+              <button className="delete-button" onClick={(e) => handleDeleteClick(e, expense.id)}>
+                ×
               </button>
             </li>
           ))
         ) : (
-          <p className="empty-message">Nenhum gasto fixo adicionado.</p>
+          <p className="empty-message" style={{textAlign: "left", padding: "10px 0"}}>Nenhum gasto fixo adicionado.</p>
         )}
       </ul>
     </div>
