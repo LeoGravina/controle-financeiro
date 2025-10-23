@@ -8,8 +8,7 @@ const TransactionList = ({ transactions = [], categories = [], onDeleteTransacti
     };
 
     return (
-        <div className="list-container">
-            <h3>Transações do Mês</h3>
+        <div >
             <ul>
                 {transactions.length === 0 ? (
                     <p className="empty-message">Nenhuma transação para exibir.</p>

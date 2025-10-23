@@ -1,106 +1,140 @@
-import React, { useState, useEffect } from 'react';
-import CurrencyInput from './CurrencyInput.jsx';
-import { FaArrowUp, FaArrowDown } from 'react-icons/fa';
+// ATUALIZADO: src/components/TransactionForm.jsx
+import React, { useState, useEffect, useMemo } from 'react';
+import CurrencyInput from './CurrencyInput'; // Sem extensão
+import { FaArrowUp, FaArrowDown, FaCalendarAlt } from 'react-icons/fa'; // Importa o ícone de calendário
+import Select from 'react-select';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
 
+const paymentMethodOptions = [
+    { value: 'debit', label: 'Débito' },
+    { value: 'credit', label: 'Crédito' },
+    { value: 'cash', label: 'Dinheiro' },
+    { value: 'pix', label: 'Pix' }
+];
+
 const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) => {
-  const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
-  const [date, setDate] = useState(getTodayString());
-  const [category, setCategory] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
-  const [isInstallment, setIsInstallment] = useState(false);
-  const [installments, setInstallments] = useState(2);
+    const [description, setDescription] = useState('');
+    const [amount, setAmount] = useState('');
+    const [date, setDate] = useState(getTodayString()); // Data ainda é controlada aqui
+    const [category, setCategory] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState(null);
+    const [isInstallment, setIsInstallment] = useState(false);
+    const [installments, setInstallments] = useState(2);
 
-  // Efeito para resetar o 'Parcelado?' se o método de pagamento mudar
-  useEffect(() => {
-    if (paymentMethod !== 'credit' && paymentMethod !== 'debit') {
-      setIsInstallment(false);
-    }
-  }, [paymentMethod]);
+    const categoryOptions = useMemo(() =>
+        categories
+            .map(cat => ({ value: cat.id, label: cat.name }))
+            .sort((a, b) => a.label.localeCompare(b.label)),
+        [categories]
+    );
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!description.trim() || !amount || parseFloat(amount) <= 0 || !category || !paymentMethod) {
-      alert("Por favor, preencha todos os campos obrigatórios.");
-      return;
-    }
+    useEffect(() => {
+        const pMethod = paymentMethod?.value;
+        if (!['credit', 'debit', 'pix'].includes(pMethod)) {
+            setIsInstallment(false);
+        }
+    }, [paymentMethod]);
 
-    onAddTransaction({
-      description: description.trim(),
-      amount: parseFloat(amount),
-      date: new Date(date + 'T12:00:00'),
-      type,
-      category: categories.find(c => c.id === category)?.name || 'Outros',
-      paymentMethod,
-      // Garante que 'isInstallment' só seja verdadeiro para despesas com cartão
-      isInstallment: type === 'expense' && (paymentMethod === 'credit' || paymentMethod === 'debit') && isInstallment,
-      installments: type === 'expense' && (paymentMethod === 'credit' || paymentMethod === 'debit') && isInstallment ? installments : 1,
-      isPaid: false
-    });
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!description.trim() || !amount || parseFloat(amount) <= 0 || !category || !paymentMethod) {
+            alert("Por favor, preencha todos os campos obrigatórios.");
+            return;
+        }
 
-    // Reset completo do formulário para os padrões
-    setDescription('');
-    setAmount('');
-    setDate(getTodayString());
-    setIsInstallment(false);
-    setCategory('');
-    setPaymentMethod('');
-    setType('expense');
-  };
+        const selectedCategoryName = category ? category.label : 'Outros';
+        const selectedPaymentMethod = paymentMethod ? paymentMethod.value : '';
 
-  return (
-    <div className="form-container">
-      <h3>Adicionar Transação</h3>
-      <div className="type-toggle-container">
-        <button type="button" className={`type-toggle-button income ${type === 'income' ? 'active' : ''}`} onClick={() => setType('income')}>
-          <FaArrowUp /> Ganho
-        </button>
-        <button type="button" className={`type-toggle-button expense ${type === 'expense' ? 'active' : ''}`} onClick={() => setType('expense')}>
-          <FaArrowDown /> Gasto
-        </button>
-      </div>
+        onAddTransaction({
+            description: description.trim(),
+            amount: parseFloat(amount),
+            date: new Date(date + 'T12:00:00'), // Pega a data do estado
+            type,
+            category: selectedCategoryName,
+            paymentMethod: selectedPaymentMethod,
+            isInstallment: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment,
+            installments: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment ? installments : 1,
+            isPaid: false
+        });
 
-      <form onSubmit={handleSubmit} style={{marginTop: '0px'}}>
-        <input type="text" placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} />
-        <CurrencyInput value={amount} onChange={setAmount} />
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
-        <div className="form-row">
-        <select value={category} onChange={(e) => setCategory(e.target.value)} required>
-          <option value="" disabled>-- Categoria --</option>
-          {categories.map(cat => ( <option key={cat.id} value={cat.id}>{cat.name}</option> ))}
-        </select>
+        // Reset Form - Mantém o tipo
+        setDescription(''); setAmount(''); setDate(getTodayString()); setIsInstallment(false);
+        setCategory(null); setPaymentMethod(null);
+    };
 
-        <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} required>
-            <option value="" disabled>-- Pagamento --</option>
-            <option value="debit">Cartão de Débito</option>
-            <option value="credit">Cartão de Crédito</option>
-            <option value="cash">Dinheiro</option>
-            <option value="pix">Pix</option>
-        </select>
+    return (
+        <div className="form-container">
+            {/* *** NOVO CABEÇALHO DO FORMULÁRIO *** */}
+            <div className="form-container-header">
+                <h3>Adicionar Transação</h3>
+                <div className="form-date-picker">
+                    <FaCalendarAlt /> {/* Ícone */}
+                    <input 
+                        type="date" 
+                        value={date} 
+                        onChange={(e) => setDate(e.target.value)} 
+                        required 
+                        aria-label="Data da transação"
+                    />
+                </div>
+            </div>
+
+            {/* Botões de tipo (Ganho/Gasto) */}
+            <div className="type-toggle-container">
+                <button type="button" className={`type-toggle-button income ${type === 'income' ? 'active' : ''}`} onClick={() => setType('income')}> <FaArrowUp /> Ganho </button>
+                <button type="button" className={`type-toggle-button expense ${type === 'expense' ? 'active' : ''}`} onClick={() => setType('expense')}> <FaArrowDown /> Gasto </button>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{marginTop: '0px'}}>
+                <input type="text" placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} required />
+                
+                {/* *** NOVO: Linha Valor + Pagamento *** */}
+                <div className="form-row">
+                    <CurrencyInput value={amount} onChange={setAmount} />
+                    <Select
+                        options={paymentMethodOptions}
+                        value={paymentMethod}
+                        onChange={setPaymentMethod}
+                        placeholder="Pagamento"
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                        required
+                    />
+                </div>
+
+                {/* Categoria agora ocupa linha inteira */}
+                <Select
+                    options={categoryOptions}
+                    value={category}
+                    onChange={setCategory}
+                    placeholder="Categoria"
+                    className="react-select-container"
+                    classNamePrefix="react-select"
+                    noOptionsMessage={() => "Nenhuma categoria"}
+                    required
+                />
+
+                {/* Condição de parcelamento (inalterada, mas agora depende da linha acima) */}
+                {type === 'expense' && ['credit', 'debit', 'pix'].includes(paymentMethod?.value) && (
+                    <div className="installment-section">
+                        <label>
+                            <input type="checkbox" checked={isInstallment} onChange={e => setIsInstallment(e.target.checked)} />
+                            Parcelado?
+                        </label>
+                        {isInstallment && (
+                           <div className="installment-input-wrapper">
+                             <span>em</span>
+                             <input type="number" value={installments} onChange={e => setInstallments(Math.max(1, parseInt(e.target.value, 10)))} min="1" />
+                             <span>x</span>
+                           </div>
+                        )}
+                    </div>
+                )}
+                <button type="submit" className="submit-button">Adicionar</button>
+            </form>
         </div>
-
-        {type === 'expense' && (paymentMethod === 'credit' || paymentMethod === 'debit') && (
-          <div className="installment-section">
-            <label>
-              <input type="checkbox" checked={isInstallment} onChange={e => setIsInstallment(e.target.checked)} />
-              Parcelado?
-            </label>
-            {isInstallment && (
-               <div className="installment-input-wrapper">
-                 <span>em</span>
-                 <input type="number" value={installments} onChange={e => setInstallments(Math.max(2, parseInt(e.target.value, 10)))} min="2" />
-                 <span>x</span>
-               </div>
-            )}
-          </div>
-        )}
-        <button type="submit" className="submit-button">Adicionar</button>
-      </form>
-    </div>
-  );
+    );
 };
 
 export default TransactionForm;
-

@@ -1,6 +1,5 @@
 /* === IMPORTAÇÕES E VARIÁVEIS GLOBAIS === */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
 :root {
   /* Cores Principais */
   --primary-color: #6a82fb; --primary-hover: #5c6bc0; --primary-light: #eef2ff;
@@ -26,8 +25,8 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-c
 /* === LAYOUT PRINCIPAL === */
 .dashboard-container { padding: 30px; max-width: 1400px; margin: 30px auto; }
 .main-layout { display: grid; grid-template-columns: 400px 1fr; gap: 35px; margin-top: 30px; }
-.sidebar { display: flex; flex-direction: column;}
-.content { display: flex; flex-direction: column;}
+.sidebar { display: flex; flex-direction: column; gap: 30px; }
+.content { display: flex; flex-direction: column; gap: 30px; }
 
 /* === CABEÇALHO === */
 header { margin-bottom: 35px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 25px; }
@@ -48,8 +47,10 @@ header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weig
 .summary-card.clickable { cursor: pointer; } .summary-card[data-type="balance"] { cursor: default; }
 .summary-card.clickable:not(.active):hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
 .summary-card.active { transform: translateY(-5px) scale(1.02); box-shadow: 0 12px 25px rgba(106, 130, 251, 0.2); border-left-width: 8px; }
-.summary-card[data-type="income"] { border-left-color: var(--income-color); } .summary-card.active[data-type="income"] { border-left-color: var(--income-color); }
-.summary-card[data-type="expense"] { border-left-color: var(--expense-color); } .summary-card.active[data-type="expense"] { border-left-color: var(--expense-color); }
+.summary-card.active[data-type="income"] { border-left-color: var(--income-color); }
+.summary-card.active[data-type="expense"] { border-left-color: var(--expense-color); }
+.summary-card[data-type="income"] { border-left-color: var(--income-color); }
+.summary-card[data-type="expense"] { border-left-color: var(--expense-color); }
 .summary-card[data-type="balance"] { border-left-color: var(--primary-color); } .summary-card[data-type="balance"].negative { border-left-color: var(--expense-color); }
 .summary-card p { margin: 0 0 10px 0; color: var(--text-light-color); font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 .summary-card span { font-size: 2.1rem; font-weight: 700; display: block; letter-spacing: -0.5px; }
@@ -57,21 +58,38 @@ header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weig
 .summary-card[data-type="balance"] span { color: var(--primary-color); } .summary-card[data-type="balance"].negative span { color: var(--expense-color); }
 
 /* === CONTAINERS GENÉRICOS === */
-.form-container, .list-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager { background: var(--card-bg-color); padding: 30px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); }
+.form-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager {
+  background: var(--card-bg-color); padding: 30px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md);
+}
+.list-container {
+  background: var(--card-bg-color); padding: 0 30px 30px 30px; border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md); display: flex; flex-direction: column; max-height: 700px;
+}
 h3 { margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 25px; font-size: 1.3rem; }
-.form-container h3, .fixed-expenses-manager h3, .category-manager h3 { margin-bottom: 20px; padding-bottom: 10px; font-size: 1.2rem; }
+.form-container h3, .fixed-expenses-manager h3, .category-manager h3 {
+  margin-bottom: 20px; padding-bottom: 10px; font-size: 1.2rem;
+  border-bottom: none; padding-bottom: 0; margin-bottom: 0;
+}
 
 /* === FORMULÁRIOS E INPUTS === */
 .form-container form, .category-form, .fixed-expense-form { display: flex; flex-direction: column; gap: 16px; }
-input[type="text"], input[type="date"], input[type="number"], select, .currency-input { padding: 12px 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); font-size: 0.95rem; font-family: 'Inter', sans-serif; transition: all var(--transition-std); background-color: var(--input-bg-color); color: var(--text-color); width: 100%; box-sizing: border-box; }
+input[type="text"], input[type="date"], input[type="number"], .currency-input {
+  padding: 12px 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); font-size: 0.95rem;
+  font-family: 'Inter', sans-serif; transition: all var(--transition-std); background-color: var(--input-bg-color); color: var(--text-color); width: 100%; box-sizing: border-box;
+}
 input[type="text"]::placeholder { color: #adb5bd; }
-input:focus, select:focus, .currency-input:focus { outline: none; border-color: var(--primary-color); box-shadow: var(--shadow-focus); background-color: #ffffff; }
-select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' class='bi bi-chevron-down' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; background-size: 16px; padding-right: 40px; }
-select::-moz-focus-inner { border: 0; } select { -moz-appearance: none; text-indent: 0.01px; text-overflow: ''; }
+/* *** REMOÇÃO DO CONTORNO DE FOCO *** */
+input:focus, .currency-input:focus,
+.filter-input.description-filter:focus {
+  outline: none; border-color: var(--primary-color);
+  box-shadow: none; /* REMOVIDO */
+  background-color: #ffffff;
+}
+.form-row { display: flex; gap: 15px; }
+.form-row .react-select-container, .form-row .currency-input { flex: 1; width: auto; } /* Aplica flex */
 .currency-input { text-align: right; }
 .submit-button { padding: 14px; border-radius: var(--border-radius-md); border: none; background: var(--primary-color); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all var(--transition-std); box-shadow: 0 4px 10px rgba(106, 130, 251, 0.2); }
 .submit-button:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(106, 130, 251, 0.3); }
-.form-row { display: flex; gap: 15px; } .form-row select { flex: 1;}
 .installment-section { display: flex; align-items: center; justify-content: space-between; gap: 15px; background-color: var(--input-bg-color); padding: 10px 15px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); }
 .installment-section label { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--text-light-color); cursor: pointer; }
 .installment-section input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary-color); cursor: pointer; margin: 0; }
@@ -79,131 +97,112 @@ select::-moz-focus-inner { border: 0; } select { -moz-appearance: none; text-ind
 .installment-section input[type="number"] { width: 60px; padding: 8px; font-size: 0.95rem; text-align: center; background-color: #ffffff; -moz-appearance: textfield; border-radius: var(--border-radius-sm); }
 .installment-section input[type="number"]::-webkit-outer-spin-button, .installment-section input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-/* === BOTÕES DE TOGGLE GANHO/GASTO (CORRIGIDO) === */
-.type-toggle-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+/* *** NOVO: Cabeçalho do Formulário (Título + Data) *** */
+.form-container-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
   margin-bottom: 20px;
 }
-
-.type-toggle-button {
+.form-container-header h3 {
+  margin-bottom: 0;
+  border: none;
+  padding: 0;
+}
+/* Estilo do Input de Data "Invisível" */
+.form-date-picker {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  padding: 10px 15px; /* Padding ajustado */
-  border-radius: var(--border-radius-md); /* Borda mais arredondada */
-  border: 1px solid var(--border-color); /* Borda padrão */
-  background-color: var(--card-bg-color);
+  border: 1px solid transparent; /* Borda invisível */
+  background-color: transparent; /* Fundo invisível */
+  border-radius: var(--border-radius-md);
+  padding: 8px 12px;
   color: var(--text-light-color);
-  font-size: 0.95rem; /* Fonte ajustada */
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-std);
+  transition: all var(--transition-fast);
 }
-
-.type-toggle-button svg {
-  font-size: 1em; /* Tamanho do ícone ajustado */
-  margin-bottom: -2px; /* Alinhamento vertical */
+.form-date-picker:hover {
+  background-color: var(--input-bg-color);
+  border-color: var(--border-color);
 }
-
-/* Botão Ativo */
-.type-toggle-button.active {
-  font-weight: 600;
-  box-shadow: var(--shadow-sm); /* Sombra suave */
-}
-
-.type-toggle-button.income.active {
-  background-color: var(--income-bg-light); /* Fundo verde claro */
-  border-color: var(--income-color);
-  color: var(--income-color);
-}
-
-.type-toggle-button.expense.active {
-  background-color: var(--expense-bg-light); /* Fundo vermelho claro */
-  border-color: var(--expense-color);
-  color: var(--expense-color);
-}
-
-/* Hover */
-.type-toggle-button:not(.active):hover {
-  border-color: #adb5bd;
-  background-color: #f8f9fa;
-  color: var(--text-color);
-}
-
-/* === ABAS SIDEBAR === */
-.sidebar-tabs {
-  display: flex;
-  gap: 0; /* Remove gap */
-  margin-bottom: 0; /* Remove margem inferior */
-  position: relative;
-  z-index: 1;
-  border-bottom: 1px solid var(--border-color); /* Linha abaixo das abas */
-}
-.sidebar-tab-button {
-  flex: 1;
-  padding: 12px 15px; /* Ajusta padding */
-  border: 1px solid transparent; /* Borda transparente */
-  border-bottom: none; /* Remove borda inferior */
-  background-color: transparent;
-  color: var(--text-light-color);
-  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0; /* Cantos superiores */
-  cursor: pointer;
-  font-weight: 500;
-  font-size: 0.95rem; /* Ajusta fonte */
-  text-align: center;
-  transition: all var(--transition-std);
-  position: relative;
-  bottom: -1px; /* Desce para cobrir a linha */
-  margin-right: 3px; /* Pequeno espaço entre */
-}
-.sidebar-tab-button.active {
-  background-color: var(--card-bg-color); /* Fundo branco ativo */
-  color: var(--primary-color);
-  font-weight: 600;
-  border-color: var(--border-color); /* Bordas visíveis */
-  border-bottom-color: var(--card-bg-color); /* Borda inferior some */
-  z-index: 2; /* Fica acima da linha */
-  box-shadow: none; /* Remove sombra padrão da aba ativa */
-}
-.sidebar-tab-button:not(.active):hover {
-  background-color: #e9ecef;
-  color: var(--text-color);
-}
-/* Container abaixo das abas para conectar visualmente */
-.sidebar-content-container {
-  border: 1px solid var(--border-color);
-  border-top: none; /* Remove borda superior */
-  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); /* Cantos inferiores */
-  margin-top: -1px; /* Sobe para encontrar a aba */
-  box-shadow: var(--shadow-md); /* Mantém a sombra */
-  overflow: hidden; /* Garante que o conteúdo não vaze */
-  /* Remove padding e background se os filhos já tiverem */
+.form-date-picker input[type="date"] {
+  border: none;
+  background: transparent;
   padding: 0;
-  background-color: transparent; /* Fundo transparente, os filhos terão fundo branco */
+  margin: 0;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  color: var(--text-color);
+  font-weight: 500;
+  width: auto;
 }
-/* Primeira aba ativa conecta o canto esquerdo */
-.sidebar-tabs button.active:first-child + .sidebar-content-container {
-  border-top-left-radius: 0;
+/* Remove ícone padrão do input de data */
+.form-date-picker input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none;
+  opacity: 0;
 }
-/* Última aba ativa conecta o canto direito */
-.sidebar-tabs button.active:last-child + .sidebar-content-container {
-  border-top-right-radius: 0;
+/* Remove o foco do input de data */
+.form-date-picker input[type="date"]:focus {
+  outline: none;
+  box-shadow: none;
+  background: transparent;
 }
-/* Ajusta padding interno dos forms quando dentro do container */
-.sidebar-content-container .form-container,
-.sidebar-content-container .fixed-expenses-manager {
-    box-shadow: none; /* Remove sombra duplicada */
-    border-radius: 0; /* Remove borda interna */
-    border-top: none; /* Garante que não haja borda dupla */
-    padding-top: 25px; /* Adiciona padding superior interno */
+
+
+/* === ESTILOS PARA REACT-SELECT (Formulário e Filtros) === */
+.react-select-container .react-select__control { min-height: 46px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background-color: var(--input-bg-color); box-shadow: none; transition: all var(--transition-std); font-size: 0.95rem; }
+/* *** REMOÇÃO DO CONTORNO DE FOCO *** */
+.react-select-container .react-select__control--is-focused { border-color: var(--primary-color); box-shadow: none; background-color: #ffffff; }
+.react-select-container .react-select__placeholder { color: #adb5bd; }
+.react-select-container .react-select__indicator-separator { display: none; }
+.react-select-container .react-select__dropdown-indicator { color: var(--text-light-color); }
+.react-select-container .react-select__menu { border-radius: var(--border-radius-md); box-shadow: var(--shadow-md); margin-top: 4px; z-index: 10; }
+.react-select-container .react-select__option { padding: 10px 16px; font-size: 0.95rem; }
+.react-select-container .react-select__option--is-focused { background-color: var(--primary-light); }
+.react-select-container .react-select__option--is-selected { background-color: var(--primary-color); color: white; }
+
+/* === BOTÕES DE TOGGLE GANHO/GASTO === */
+.type-toggle-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.type-toggle-button { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 15px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background-color: var(--card-bg-color); color: var(--text-light-color); font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all var(--transition-std); }
+.type-toggle-button svg { font-size: 1em; margin-bottom: -2px; }
+.type-toggle-button.active { font-weight: 600; box-shadow: var(--shadow-sm); }
+.type-toggle-button.income.active { background-color: var(--income-bg-light); border-color: var(--income-color); color: var(--income-color); }
+.type-toggle-button.expense.active { background-color: var(--expense-bg-light); border-color: var(--expense-color); color: var(--expense-color); }
+.type-toggle-button:not(.active):hover { border-color: #adb5bd; background-color: #f8f9fa; color: var(--text-color); }
+
+/* === ABAS (Sidebar e Lista) - ESTILO UNIFICADO E CORRIGIDO === */
+.sidebar-tabs, .transaction-view-tabs { display: flex; gap: 0; margin-bottom: 0; position: relative; z-index: 1; border-bottom: 1px solid var(--border-color); }
+.sidebar-tab-button, .tab-button {
+  flex: 1; padding: 12px 15px; border: 1px solid transparent; border-bottom: none; background-color: transparent; color: var(--text-light-color);
+  border-radius: var(--border-radius-md) var(--border-radius-md) 0 0; cursor: pointer; font-weight: 500; font-size: 0.95rem; text-align: center;
+  transition: all var(--transition-std); position: relative; bottom: -1px; margin-right: 3px;
 }
+.tab-button { flex: 0 1 auto; font-size: 1rem; padding: 12px 25px; }
+.sidebar-tab-button.active, .tab-button.active {
+  background-color: var(--card-bg-color); color: var(--primary-color); font-weight: 600;
+  border-color: var(--border-color); border-bottom-color: var(--card-bg-color); z-index: 2; box-shadow: none;
+}
+.sidebar-tab-button:not(.active):hover, .tab-button:not(.active):hover { background-color: #e9ecef; color: var(--text-color); }
+/* Conexão Visual Sidebar */
+.sidebar-content-container { border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); margin-top: -1px; box-shadow: var(--shadow-md); overflow: hidden; padding: 0; background-color: var(--card-bg-color); }
+.sidebar-tabs button.active:first-child + .sidebar-content-container { border-top-left-radius: 0; }
+.sidebar-tabs button.active:last-child + .sidebar-content-container { border-top-right-radius: 0; }
+.sidebar-tabs button:not(.active):first-child + .sidebar-content-container { border-top-left-radius: var(--border-radius-lg); }
+.sidebar-tabs button:not(.active):last-child + .sidebar-content-container { border-top-right-radius: var(--border-radius-lg); }
+.sidebar-content-container .form-container, .sidebar-content-container .fixed-expenses-manager { box-shadow: none; border-radius: 0; border: none; padding-top: 25px; padding-bottom: 25px; height: 100%; }
+/* Conexão Visual Lista */
+.transaction-view-tabs + .list-container { border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px; }
+.transaction-view-tabs button.active:first-child + .list-container { border-top-left-radius: 0; }
+.transaction-view-tabs button.active:last-child + .list-container { border-top-right-radius: 0; }
+.transaction-view-tabs button:not(.active):first-child + .list-container { border-top-left-radius: var(--border-radius-lg); }
+.transaction-view-tabs button:not(.active):last-child + .list-container { border-top-right-radius: var(--border-radius-lg); }
 
 /* === GERENCIADORES (CATEGORIA E GASTOS FIXOS) === */
-.category-manager, .fixed-expenses-manager { /* Estilos comuns */ }
-.category-manager h3, .fixed-expenses-manager h3 { margin-bottom: 20px; }
+.category-manager { margin-top: 30px; } /* << SEPARAÇÃO DA SIDEBAR */
+.fixed-expenses-manager { /* Estilos comuns */ }
+.category-manager h3, .fixed-expenses-manager h3 { /* ... */ }
 .category-form { display: flex; flex-direction: row; gap: 10px; margin-bottom: 25px; align-items: center; }
 .fixed-expense-form { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; align-items: stretch; }
 .category-form input[type="text"], .fixed-expense-form input[type="text"] { flex-grow: 1; width: auto; }
@@ -214,35 +213,37 @@ select::-moz-focus-inner { border: 0; } select { -moz-appearance: none; text-ind
 .day-picker { display: flex; align-items: center; gap: 10px; background-color: var(--input-bg-color); padding: 10px 15px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); }
 .day-picker label { color: var(--text-light-color); font-size: 0.9rem; white-space: nowrap; }
 .day-picker input[type="number"] { width: 70px; padding: 8px 10px; background-color: white; }
-.category-list, .fixed-expense-list { list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; }
-.category-list li, .fixed-expense-list li { display: flex; align-items: center; padding: 10px 5px; border-bottom: 1px solid #f0f0f0; }
+.category-list, .fixed-expense-list { list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; } /* << SCROLL */
+.category-list li, .fixed-expense-list li { display: flex; align-items: center; padding: 10px 5px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color var(--transition-fast); }
 .category-list li:last-child, .fixed-expense-list li:last-child { border-bottom: none; }
-.category-list .category-name-wrapper { flex-grow: 1; display: flex; align-items: center; cursor: pointer; }
+.category-list li:hover, .fixed-expense-list li:hover { background-color: var(--primary-light); } /* << HOVER SUTIL */
+.category-list .category-name-wrapper { flex-grow: 1; display: flex; align-items: center; }
 .fixed-expense-list .expense-info { flex-grow: 1; display: flex; flex-direction: column; }
 .expense-info span { font-weight: 500; } .expense-info small { color: var(--text-light-color); font-size: 0.8rem; }
 .color-dot { height: 16px; width: 16px; border-radius: 50%; display: inline-block; margin-right: 12px; border: 2px solid var(--card-bg-color); box-shadow: 0 0 0 1px rgba(0,0,0,0.1); flex-shrink: 0; }
-.action-button, .delete-button { background: none; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 6px; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; transition: all var(--transition-fast); color: var(--text-light-color); }
-.category-list .delete-button, .fixed-expense-list .delete-button { margin-left: auto; }
+.action-button, .delete-button { background: none; border: none; cursor: pointer; font-size: 1.1rem; /* Tamanho do Ícone 'X' */ line-height: 1; padding: 6px; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; transition: all var(--transition-fast); color: var(--text-light-color); }
+.category-list .delete-button, .fixed-expense-list .delete-button { margin-left: auto; font-size: 1.5rem; font-weight: bold; } /* 'X' para listas */
 .action-button:hover, .delete-button:hover { background-color: var(--expense-bg-light); color: var(--expense-color); }
 
-/* === LISTA DE TRANSAÇÕES === */
-/* Abas da Lista */
-transaction-view-tabs { display: flex; gap: 0; margin-bottom: 0; position: relative; z-index: 1; border-bottom: 1px solid var(--border-color); }
-.tab-button { padding: 12px 25px; border: 1px solid transparent; border-bottom: none; background-color: transparent; color: var(--text-light-color); border-radius: var(--border-radius-md) var(--border-radius-md) 0 0; cursor: pointer; font-weight: 500; font-size: 1rem; transition: all var(--transition-std); margin-right: 5px; position: relative; bottom: -1px; }
-.tab-button.active { background-color: var(--card-bg-color); color: var(--primary-color); font-weight: 600; border-color: var(--border-color); border-bottom-color: var(--card-bg-color); z-index: 2; }
-.tab-button:not(.active):hover { background-color: #e9ecef; color: var(--text-color); }
-/* Container da Lista Conectado */
-.list-container {
-  border-radius: var(--border-radius-lg); position: relative; z-index: 0; border-top: none;
-  border: 1px solid var(--border-color); border-top: none;
+/* === FILTROS DA LISTA DE TRANSAÇÕES (Dentro do Card) === */
+.list-container-header {
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 15px;
+  padding: 30px 0px 20px 0px; /* Padding interno (topo: 30px, laterais: 0, baixo: 20px) */
+  border-bottom: 1px solid var(--border-color); margin-bottom: 15px;
 }
-.transaction-view-tabs + .list-container { border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px; }
-.transaction-view-tabs button.active:first-child + .list-container { border-top-left-radius: 0; }
-.transaction-view-tabs button.active:last-child + .list-container { border-top-right-radius: 0; }
-.transaction-view-tabs button:not(.active):first-child + .list-container { border-top-left-radius: var(--border-radius-lg); }
-.transaction-view-tabs button:not(.active):last-child + .list-container { border-top-right-radius: var(--border-radius-lg); }
+.list-container-header h3 { margin: 0; border: none; padding: 0; font-size: 1.3rem; }
+.transaction-list-filters { display: flex; gap: 15px; flex-grow: 1; justify-content: flex-end; }
+.filter-input { flex-grow: 1; min-width: 180px; max-width: 250px; }
+.filter-input.description-filter {
+  padding: 10px 14px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color);
+  font-size: 0.9rem; background-color: white; height: 42px; /* Altura fixa */
+}
+.filter-input.category-filter .react-select__control { min-height: 42px; height: 42px; font-size: 0.9rem; background-color: white; }
+.filter-input.category-filter .react-select__placeholder { color: #adb5bd; }
 
-.list-container ul { list-style: none; padding: 0; margin: 0; }
+/* === LISTA DE TRANSAÇÕES === */
+.list-container ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; max-height: 600px; /* << SCROLL LISTA */ }
 .list-container li { display: flex; align-items: center; gap: 10px; padding: 15px; border-bottom: 1px solid var(--border-color); background-color: #ffffff; transition: background-color var(--transition-fast); border-left: 5px solid transparent; }
 .list-container li:last-child { border-bottom: none; }
 .transaction-clickable-area { flex-grow: 1; display: flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -269,7 +270,7 @@ transaction-view-tabs { display: flex; gap: 0; margin-bottom: 0; position: relat
 .transaction-amount { font-weight: 600; font-size: 1rem; margin-left: auto; white-space: nowrap; text-align: right; }
 .transaction-amount.income { color: var(--income-color); } .transaction-amount.expense { color: var(--expense-color); }
 .transaction-actions { display: flex; gap: 5px; }
-.delete-list-button { background: none; border: none; color: var(--text-light-color); border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; transition: all var(--transition-fast); opacity: 0; font-weight: bold; }
+.delete-list-button { background: none; border: none; color: var(--text-light-color); border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 1.5rem; display: flex; justify-content: center; align-items: center; transition: all var(--transition-fast); opacity: 0; font-weight: bold; }
 .list-container li:hover .delete-list-button { opacity: 0.6; }
 .delete-list-button:hover { opacity: 1; background-color: var(--expense-bg-light); color: var(--expense-color); transform: scale(1.1); }
 .delete-list-button:disabled { opacity: 0.1; cursor: not-allowed; } .delete-list-button:disabled:hover { background: none; color: var(--text-light-color); transform: none; }
@@ -309,6 +310,12 @@ transaction-view-tabs { display: flex; gap: 0; margin-bottom: 0; position: relat
 .edit-category-inline-form .edit-category-color-picker { width: 45px; height: 45px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); padding: 0; cursor: pointer; flex-shrink: 0; background-color: transparent; appearance: none; -webkit-appearance: none; }
 .edit-category-inline-form .edit-category-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
 .edit-category-inline-form .edit-category-color-picker::-webkit-color-swatch { border: none; border-radius: var(--border-radius-sm); }
+/* Modal Edição Transação - Cabeçalho com Data */
+.modal-content .form-container-header { display: flex; justify-content: space-between; align-items: center; border-bottom: none; padding-bottom: 0; margin-bottom: 20px; }
+.modal-content .form-container-header h4 { margin-bottom: 0; }
+.modal-content .form-date-picker { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); background-color: var(--input-bg-color); border-radius: var(--border-radius-md); padding: 8px 12px; color: var(--text-light-color); }
+.modal-content .form-date-picker input[type="date"] { border: none; background: transparent; padding: 0; margin: 0; font-size: 0.9rem; font-family: 'Inter', sans-serif; color: var(--text-color); width: auto; }
+.modal-content .form-date-picker input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
 
 /* === RESPONSIVIDADE === */
 @media (max-width: 1200px) { .main-layout { grid-template-columns: 350px 1fr; } }
@@ -324,11 +331,13 @@ transaction-view-tabs { display: flex; gap: 0; margin-bottom: 0; position: relat
     .main-layout { gap: 25px; }
     .form-container, .list-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager { padding: 20px; }
     h3 { font-size: 1.2rem; padding-bottom: 10px; margin-bottom: 20px; }
-    input[type="text"], input[type="date"], input[type="number"], select, .currency-input { padding: 10px 14px; font-size: 0.9rem;}
+    input[type="text"], input[type="date"], input[type="number"], .currency-input { padding: 10px 14px; font-size: 0.9rem;}
     .submit-button { padding: 12px; font-size: 0.95rem; }
     .modal-content { padding: 25px; max-width: 90%; } .modal-content h4 { font-size: 1.4rem; } .modal-content p { font-size: 0.95rem; } .modal-button { padding: 10px 20px; font-size: 0.9rem;}
     .category-form { flex-direction: column; align-items: stretch; }
     .category-form input[type="text"], .category-form input[type="color"], .category-form .submit-button { width: 100%; height: 40px; }
+    .list-container-header { flex-direction: column; align-items: stretch; }
+    .transaction-list-filters { flex-direction: column; } .filter-input { min-width: 100%; }
     .list-container li { padding: 12px; gap: 8px; } .transaction-amount { font-size: 0.9rem; }
     .delete-list-button { width: 28px; height: 28px; font-size: 1rem; }
     .sidebar-tabs, .transaction-view-tabs { padding: 4px; border-radius: 8px; }

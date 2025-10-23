@@ -1,18 +1,20 @@
+// COMPLETO: src/components/CategoryManager.jsx
 import React, { useState } from 'react';
+import { FaTimes } from 'react-icons/fa'; // Importa o 'X'
 
 const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory, onEditCategory }) => {
   const [name, setName] = useState('');
-  const [color, setColor] = useState('#6a82fb'); // Cor padrão mais alinhada
+  const [color, setColor] = useState('#6a82fb');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name.trim()) return; // Impede categorias vazias
+    if (!name.trim()) return;
     onAddCategory({ name: name.trim(), color });
     setName('');
   };
 
   const handleDeleteClick = (e, id) => {
-    e.stopPropagation(); // Impede que o clique dispare a edição da linha
+    e.stopPropagation();
     onDeleteCategory(id, 'category');
   };
 
@@ -20,40 +22,26 @@ const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory, onE
     <div className="category-manager">
       <h3>Gerenciar Categorias</h3>
       <form onSubmit={handleSubmit} className="category-form">
-        <input
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="Nome da categoria"
-          aria-label="Nome da nova categoria"
-        />
-        <input
-          type="color"
-          value={color}
-          onChange={e => setColor(e.target.value)}
-          aria-label="Cor da categoria"
-        />
-        <button type="submit" className="submit-button" style={{ padding: '8px 15px' }}>
-          +
-        </button>
+        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nome da categoria" />
+        <input type="color" value={color} onChange={e => setColor(e.target.value)} />
+        <button type="submit" className="submit-button">+</button>
       </form>
       <ul className="category-list">
-        {categories.length === 0 ? (
-          <p className="empty-message" style={{textAlign: 'left', padding: '10px 0'}}>Crie sua primeira categoria!</p>
-        ) : (
-          categories.map(cat => (
-            // Adiciona onClick na linha para chamar a edição
-            <li key={cat.id} onClick={() => onEditCategory(cat)}>
+        {categories.length > 0 ? (
+          // Ordena as categorias alfabeticamente para exibição
+          [...categories].sort((a, b) => a.name.localeCompare(b.name)).map(cat => (
+            <li key={cat.id} onClick={() => onEditCategory(cat)} title={`Editar ${cat.name}`}>
               <div className="category-name-wrapper">
                 <span className="color-dot" style={{ backgroundColor: cat.color }}></span>
                 {cat.name}
               </div>
-              {/* Botão de deletar separado */}
-              <button className="delete-button action-button" onClick={(e) => handleDeleteClick(e, cat.id)} aria-label={`Excluir categoria ${cat.name}`}>
-                🗑️
+              <button className="delete-button action-button" onClick={(e) => handleDeleteClick(e, cat.id)} title={`Excluir ${cat.name}`}>
+                <FaTimes /> {/* Ícone 'X' */}
               </button>
             </li>
           ))
+        ) : (
+          <p className="empty-message" style={{textAlign: "left", padding: "10px 0"}}>Crie sua primeira categoria!</p>
         )}
       </ul>
     </div>
