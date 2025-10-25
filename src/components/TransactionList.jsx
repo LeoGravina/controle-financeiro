@@ -1,3 +1,4 @@
+// ATUALIZADO: src/components/TransactionList.jsx
 import React from 'react';
 import { FaThumbtack } from 'react-icons/fa';
 
@@ -27,7 +28,14 @@ const TransactionList = ({ transactions = [], categories = [], onDeleteTransacti
                                   style={{ cursor: t.isFixed ? 'default' : 'pointer' }}
                                 >
                                     {t.type === 'expense' && (
-                                        <label className="paid-status-toggle" onClick={handleActionClick} aria-label={`Marcar ${t.description} como ${t.isPaid ? 'não pago' : 'pago'}`}>
+                                        // *** ATUALIZADO AQUI ***
+                                        // Adicionado 'data-tooltip' com a descrição dinâmica
+                                        <label 
+                                            className="paid-status-toggle" 
+                                            onClick={handleActionClick} 
+                                            aria-label={`Marcar ${t.description} como ${t.isPaid ? 'não pago' : 'pago'}`}
+                                            data-tooltip={t.isPaid ? "Marcar como não pago" : "Marcar como pago"}
+                                        >
                                             <input type="checkbox" checked={t.isPaid || false} onChange={() => onTogglePaid(t)} />
                                             <span className="checkmark"></span>
                                         </label>

@@ -18,3 +18,4 @@ const SummaryCard = ({ title, value, type, onClick, isActive }) => {
 };
 
 export default SummaryCard;
+

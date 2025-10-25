@@ -44,11 +44,14 @@ header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weig
 /* === CARDS DE RESUMO === */
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 40px; }
 .summary-card { background: var(--card-bg-color); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); transition: all var(--transition-std); border-left: 6px solid; position: relative; overflow: hidden; }
-.summary-card.clickable { cursor: pointer; } .summary-card[data-type="balance"] { cursor: default; }
+/* RE-ADICIONADO: Estilos de filtro dos cards */
+.summary-card.clickable { cursor: pointer; } 
+.summary-card[data-type="balance"] { cursor: default; }
 .summary-card.clickable:not(.active):hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
 .summary-card.active { transform: translateY(-5px) scale(1.02); box-shadow: 0 12px 25px rgba(106, 130, 251, 0.2); border-left-width: 8px; }
 .summary-card.active[data-type="income"] { border-left-color: var(--income-color); }
 .summary-card.active[data-type="expense"] { border-left-color: var(--expense-color); }
+/* Fim dos estilos re-adicionados */
 .summary-card[data-type="income"] { border-left-color: var(--income-color); }
 .summary-card[data-type="expense"] { border-left-color: var(--expense-color); }
 .summary-card[data-type="balance"] { border-left-color: var(--primary-color); } .summary-card[data-type="balance"].negative { border-left-color: var(--expense-color); }
@@ -78,15 +81,14 @@ input[type="text"], input[type="date"], input[type="number"], .currency-input {
   font-family: 'Inter', sans-serif; transition: all var(--transition-std); background-color: var(--input-bg-color); color: var(--text-color); width: 100%; box-sizing: border-box;
 }
 input[type="text"]::placeholder { color: #adb5bd; }
-/* *** REMOÇÃO DO CONTORNO DE FOCO *** */
 input:focus, .currency-input:focus,
 .filter-input.description-filter:focus {
   outline: none; border-color: var(--primary-color);
-  box-shadow: none; /* REMOVIDO */
+  box-shadow: none; 
   background-color: #ffffff;
 }
 .form-row { display: flex; gap: 15px; }
-.form-row .react-select-container, .form-row .currency-input { flex: 1; width: 0; } /* Aplica flex */
+.form-row .react-select-container, .form-row .currency-input { flex: 1; width: 0; }
 .currency-input { text-align: right; }
 .submit-button { padding: 14px; border-radius: var(--border-radius-md); border: none; background: var(--primary-color); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all var(--transition-std); box-shadow: 0 4px 10px rgba(106, 130, 251, 0.2); }
 .submit-button:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 6px 12px rgba(106, 130, 251, 0.3); }
@@ -97,7 +99,6 @@ input:focus, .currency-input:focus,
 .installment-section input[type="number"] { width: 60px; padding: 8px; font-size: 0.95rem; text-align: center; background-color: #ffffff; -moz-appearance: textfield; border-radius: var(--border-radius-sm); }
 .installment-section input[type="number"]::-webkit-outer-spin-button, .installment-section input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-/* *** NOVO: Cabeçalho do Formulário (Título + Data) *** */
 .form-container-header {
   display: flex;
   justify-content: space-between;
@@ -111,13 +112,12 @@ input:focus, .currency-input:focus,
   border: none;
   padding: 0;
 }
-/* Estilo do Input de Data "Invisível" */
 .form-date-picker {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: 1px solid transparent; /* Borda invisível */
-  background-color: transparent; /* Fundo invisível */
+  border: 1px solid transparent; 
+  background-color: transparent; 
   border-radius: var(--border-radius-md);
   padding: 8px 12px;
   color: var(--text-light-color);
@@ -138,12 +138,10 @@ input:focus, .currency-input:focus,
   font-weight: 500;
   width: auto;
 }
-/* Remove ícone padrão do input de data */
 .form-date-picker input[type="date"]::-webkit-calendar-picker-indicator {
   display: none;
   opacity: 0;
 }
-/* Remove o foco do input de data */
 .form-date-picker input[type="date"]:focus {
   outline: none;
   box-shadow: none;
@@ -153,12 +151,12 @@ input:focus, .currency-input:focus,
 
 /* === ESTILOS PARA REACT-SELECT (Formulário e Filtros) === */
 .react-select-container .react-select__control { min-height: 46px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background-color: var(--input-bg-color); box-shadow: none; transition: all var(--transition-std); font-size: 0.95rem; }
-/* *** REMOÇÃO DO CONTORNO DE FOCO *** */
 .react-select-container .react-select__control--is-focused { border-color: var(--primary-color); box-shadow: none; background-color: #ffffff; }
 .react-select-container .react-select__placeholder { color: #adb5bd; }
 .react-select-container .react-select__indicator-separator { display: none; }
 .react-select-container .react-select__dropdown-indicator { color: var(--text-light-color); }
-.react-select-container .react-select__menu { border-radius: var(--border-radius-md); box-shadow: var(--shadow-md); margin-top: 4px; z-index: 10; }
+/* ATUALIZADO: z-index do menu */
+.react-select-container .react-select__menu { border-radius: var(--border-radius-md); box-shadow: var(--shadow-md); margin-top: 4px; z-index: 20; /* Aumentado para 20 */ }
 .react-select-container .react-select__option { padding: 10px 16px; font-size: 0.95rem; }
 .react-select-container .react-select__option--is-focused { background-color: var(--primary-light); }
 .react-select-container .react-select__option--is-selected { background-color: var(--primary-color); color: white; }
@@ -186,7 +184,8 @@ input:focus, .currency-input:focus,
 }
 .sidebar-tab-button:not(.active):hover, .tab-button:not(.active):hover { background-color: #e9ecef; color: var(--text-color); }
 /* Conexão Visual Sidebar */
-.sidebar-content-container { border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); margin-top: -1px; box-shadow: var(--shadow-md); overflow: hidden; padding: 0; background-color: var(--card-bg-color); }
+/* ATUALIZADO: removido 'overflow: hidden' */
+.sidebar-content-container { border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); margin-top: -1px; box-shadow: var(--shadow-md); /* overflow: hidden; */ padding: 0; background-color: var(--card-bg-color); }
 .sidebar-tabs button.active:first-child + .sidebar-content-container { border-top-left-radius: 0; }
 .sidebar-tabs button.active:last-child + .sidebar-content-container { border-top-right-radius: 0; }
 .sidebar-tabs button:not(.active):first-child + .sidebar-content-container { border-top-left-radius: var(--border-radius-lg); }
@@ -200,9 +199,9 @@ input:focus, .currency-input:focus,
 .transaction-view-tabs button:not(.active):last-child + .list-container { border-top-right-radius: var(--border-radius-lg); }
 
 /* === GERENCIADORES (CATEGORIA E GASTOS FIXOS) === */
-.category-manager { margin-top: 30px; } /* << SEPARAÇÃO DA SIDEBAR */
-.fixed-expenses-manager { /* Estilos comuns */ }
-.category-manager h3, .fixed-expenses-manager h3 { /* ... */ }
+.category-manager { margin-top: 30px; } 
+.fixed-expenses-manager { }
+.category-manager h3, .fixed-expenses-manager h3 { }
 .category-form { display: flex; flex-direction: row; gap: 10px; margin-bottom: 25px; align-items: center; }
 .fixed-expense-form { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; align-items: stretch; }
 .category-form input[type="text"], .fixed-expense-form input[type="text"] { flex-grow: 1; width: auto; }
@@ -213,23 +212,23 @@ input:focus, .currency-input:focus,
 .day-picker { display: flex; align-items: center; gap: 10px; background-color: var(--input-bg-color); padding: 10px 15px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); }
 .day-picker label { color: var(--text-light-color); font-size: 0.9rem; white-space: nowrap; }
 .day-picker input[type="number"] { width: 70px; padding: 8px 10px; background-color: white; }
-.category-list, .fixed-expense-list { list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; } /* << SCROLL */
+.category-list, .fixed-expense-list { list-style: none; padding: 0; margin: 0; max-height: 250px; overflow-y: auto; }
 .category-list li, .fixed-expense-list li { display: flex; align-items: center; padding: 10px 5px; border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background-color var(--transition-fast); }
 .category-list li:last-child, .fixed-expense-list li:last-child { border-bottom: none; }
-.category-list li:hover, .fixed-expense-list li:hover { background-color: var(--primary-light); } /* << HOVER SUTIL */
+.category-list li:hover, .fixed-expense-list li:hover { background-color: var(--primary-light); }
 .category-list .category-name-wrapper { flex-grow: 1; display: flex; align-items: center; }
 .fixed-expense-list .expense-info { flex-grow: 1; display: flex; flex-direction: column; }
 .expense-info span { font-weight: 500; } .expense-info small { color: var(--text-light-color); font-size: 0.8rem; }
 .color-dot { height: 16px; width: 16px; border-radius: 50%; display: inline-block; margin-right: 12px; border: 2px solid var(--card-bg-color); box-shadow: 0 0 0 1px rgba(0,0,0,0.1); flex-shrink: 0; }
-.action-button, .delete-button { background: none; border: none; cursor: pointer; font-size: 1.1rem; /* Tamanho do Ícone 'X' */ line-height: 1; padding: 6px; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; transition: all var(--transition-fast); color: var(--text-light-color); }
-.category-list .delete-button, .fixed-expense-list .delete-button { margin-left: auto; font-size: 1.5rem; font-weight: bold; } /* 'X' para listas */
+.action-button, .delete-button { background: none; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 6px; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; transition: all var(--transition-fast); color: var(--text-light-color); }
+.category-list .delete-button, .fixed-expense-list .delete-button { margin-left: auto; font-size: 1.5rem; font-weight: bold; }
 .action-button:hover, .delete-button:hover { background-color: var(--expense-bg-light); color: var(--expense-color); }
 
 /* === FILTROS DA LISTA DE TRANSAÇÕES (Dentro do Card) === */
 .list-container-header {
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: 15px;
-  padding: 30px 0px 20px 0px; /* Padding interno (topo: 30px, laterais: 0, baixo: 20px) */
+  padding: 30px 0px 20px 0px; 
   border-bottom: 1px solid var(--border-color); margin-bottom: 15px;
 }
 .list-container-header h3 { margin: 0; border: none; padding: 0; font-size: 1.3rem; }
@@ -237,24 +236,22 @@ input:focus, .currency-input:focus,
 .filter-input { flex-grow: 1; min-width: 180px; max-width: 250px; }
 .filter-input.description-filter {
   padding: 10px 14px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color);
-  font-size: 0.9rem; background-color: white; height: 42px; /* Altura fixa */
+  font-size: 0.9rem; background-color: white; height: 42px; 
 }
 .filter-input.category-filter .react-select__control { min-height: 42px; height: 42px; font-size: 0.9rem; background-color: white; }
 .filter-input.category-filter .react-select__placeholder { color: #adb5bd; }
 
 /* === LISTA DE TRANSAÇÕES === */
-.list-container ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; max-height: 600px; /* << SCROLL LISTA */ }
+.list-container ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; max-height: 600px; }
 .list-container li { display: flex; align-items: center; gap: 10px; padding: 15px; border-bottom: 1px solid var(--border-color); background-color: #ffffff; transition: background-color var(--transition-fast); border-left: 5px solid transparent; }
 .list-container li:last-child { border-bottom: none; }
 .transaction-clickable-area { flex-grow: 1; display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .list-container li:hover { background-color: #f8f9fa; }
-/* Cores das Linhas */
 .list-container li.income-row { background-color: var(--income-bg-light); border-left-color: var(--income-color); } .list-container li.income-row:hover { background-color: #d1f2eb; }
 .list-container li.unpaid-expense-row { background-color: var(--expense-bg-light); border-left-color: var(--expense-color); } .list-container li.unpaid-expense-row:hover { background-color: #fbd7d7; }
 .list-container li.paid-expense-row { background-color: var(--primary-light); border-left-color: #a5b4fc; opacity: 0.8; }
 .list-container li.paid-expense-row .transaction-details, .list-container li.paid-expense-row .transaction-amount { opacity: 0.7; }
 .list-container li.paid-expense-row:hover { background-color: #e0e7ff; opacity: 1; }
-/* Checkbox Customizado */
 .paid-status-toggle { position: relative; width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
 .paid-status-toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .paid-status-toggle .checkmark { position: absolute; inset: 0; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 5px; transition: all var(--transition-fast); }
@@ -262,7 +259,6 @@ input:focus, .currency-input:focus,
 .list-container li.paid-expense-row .paid-status-toggle .checkmark { background-color: #a5b4fc; border-color: #a5b4fc; }
 .paid-status-toggle .checkmark:after { content: ""; position: absolute; display: none; left: 6px; top: 2px; width: 5px; height: 10px; border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg); }
 .paid-status-toggle input:checked ~ .checkmark:after { display: block; }
-/* Detalhes da Transação */
 .transaction-details { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; }
 .transaction-details span { font-weight: 500; font-size: 1rem; color: var(--text-color); }
 .transaction-details small { color: var(--text-light-color); font-size: 0.8rem; display: flex; align-items: center; gap: 8px; }
@@ -278,12 +274,71 @@ input:focus, .currency-input:focus,
 
 /* === GRÁFICOS === */
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; margin-bottom: 30px; }
-.chart-item { background: var(--card-bg-color); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow); transition: all var(--transition-std); opacity: 0.7; transform: scale(0.98); }
-.chart-item.highlighted { opacity: 1; transform: scale(1); box-shadow: 0 8px 25px rgba(106, 130, 251, 0.2); }
+.chart-item {
+  background: var(--card-bg-color);
+  padding: 25px;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-std);
+  position: relative; 
+}
+.chart-item:hover {
+  transform: translateY(-5px); 
+  box-shadow: var(--shadow-lg);
+}
+
+/* === TOOLTIP CUSTOMIZADO (Para Cards e Gráficos) === */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]::before,
+[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 105%; 
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  
+  /* ATUALIZADO AQUI */
+  z-index: 1010; /* <<<<<<< VALOR AUMENTADO */
+  
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast), visibility var(--transition-fast);
+  pointer-events: none; 
+}
+[data-tooltip]::after {
+  content: '';
+  position: absolute;
+  bottom: calc(105% - 5px); 
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  background-color: #333;
+  width: 10px;
+  height: 10px;
+
+  /* ATUALIZADO AQUI */
+  z-index: 1009; /* <<<<<<< VALOR AUMENTADO */
+}
+[data-tooltip]:hover::before,
+[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 0.3s; 
+}
+
 .chart-item h4 { margin-top: 0; margin-bottom: 20px; text-align: center; font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
 .charts-container .recharts-wrapper { font-size: 12px; }
 .empty-message { text-align: center; color: var(--text-light-color); padding: 20px 0; font-style: italic; }
-/* Tooltip do Gráfico */
+/* Tooltip do Gráfico (Interno) */
 .custom-tooltip { background-color: rgba(30, 41, 59, 0.95); padding: 12px 18px; border-radius: var(--border-radius-md); border: none; box-shadow: var(--shadow-lg); color: #f8f9fa; font-size: 0.9rem; line-height: 1.5; }
 .custom-tooltip .label { font-weight: 700; margin-bottom: 8px; font-size: 1rem; color: #ffffff; }
 .custom-tooltip .value { color: #ced4da; margin-bottom: 4px; }
@@ -294,6 +349,10 @@ input:focus, .currency-input:focus,
 .modal-overlay.open { opacity: 1; visibility: visible; }
 .modal-content { background: #ffffff; padding: 35px 40px; border-radius: var(--border-radius-lg); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); width: 100%; max-width: 450px; text-align: center; transform: scale(0.95) translateY(10px); opacity: 0; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease-in-out; }
 .modal-overlay.open .modal-content { transform: scale(1) translateY(0); opacity: 1; }
+/* ATUALIZADO: z-index do menu select DENTRO do modal */
+.modal-content .react-select-container .react-select__menu {
+  z-index: 1001; /* Garante que o menu do select apareça SOBRE o modal */
+}
 .modal-content h4 { margin-top: 0; font-size: 1.6rem; color: var(--text-color); margin-bottom: 15px; font-weight: 700; }
 .modal-content p { font-size: 1.05rem; color: var(--text-light-color); margin-bottom: 30px; line-height: 1.7; }
 .modal-actions { display: flex; justify-content: center; gap: 15px; }
@@ -304,13 +363,11 @@ input:focus, .currency-input:focus,
 .modal-button.confirm[style*="background-color: var(--primary-color)"] { background-color: var(--primary-color); box-shadow: 0 4px 10px rgba(106, 130, 251, 0.3); }
 .modal-button.confirm:hover { background-color: #c0392b; transform: translateY(-2px); box-shadow: 0 6px 12px rgba(231, 76, 60, 0.4); }
 .modal-button.confirm[style*="background-color: var(--primary-color)"]:hover { background-color: var(--primary-hover); box-shadow: 0 6px 12px rgba(106, 130, 251, 0.4); }
-/* Modal Edição Categoria */
 .edit-category-inline-form { display: flex; align-items: center; gap: 15px; }
 .edit-category-inline-form input[type="text"] { flex-grow: 1; width: auto; }
 .edit-category-inline-form .edit-category-color-picker { width: 45px; height: 45px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); padding: 0; cursor: pointer; flex-shrink: 0; background-color: transparent; appearance: none; -webkit-appearance: none; }
 .edit-category-inline-form .edit-category-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
 .edit-category-inline-form .edit-category-color-picker::-webkit-color-swatch { border: none; border-radius: var(--border-radius-sm); }
-/* Modal Edição Transação - Cabeçalho com Data */
 .modal-content .form-container-header { display: flex; justify-content: space-between; align-items: center; border-bottom: none; padding-bottom: 0; margin-bottom: 20px; }
 .modal-content .form-container-header h4 { margin-bottom: 0; }
 .modal-content .form-date-picker { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); background-color: var(--input-bg-color); border-radius: var(--border-radius-md); padding: 8px 12px; color: var(--text-light-color); }
@@ -344,3 +401,141 @@ input:focus, .currency-input:focus,
     .sidebar-tab-button, .tab-button { padding: 8px 10px; font-size: 0.85rem; }
     .charts-grid { gap: 20px; } .chart-item h4 { font-size: 1rem; }
 }
+
+/* === INÍCIO: ESTILOS DA PÁGINA DE RELATÓRIO === */
+.card-style {
+  background: var(--card-bg-color);
+  padding: 30px;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.report-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap; 
+}
+.report-title {
+  text-align: center;
+  flex-grow: 1;
+}
+.report-title h1 {
+  font-size: 2.0rem;
+  margin: 0 0 5px 0;
+  color: var(--primary-color); 
+  font-weight: 700;
+  letter-spacing: -1px; 
+}
+.report-title h2 {
+  font-size: 1.2rem;
+  margin: 0;
+  color: var(--text-light-color);
+  font-weight: 500;
+}
+.report-total {
+  background-color: var(--card-bg-color);
+  padding: 15px 25px;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  text-align: right;
+  min-width: 200px; 
+}
+.report-total span {
+  display: block;
+  color: var(--text-light-color);
+  font-size: 0.9rem;
+  margin-bottom: 5px;
+}
+.report-total strong {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+.report-total strong.income { color: var(--income-color); }
+.report-total strong.expense { color: var(--expense-color); }
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+.report-chart-item h3 {
+  margin-top: 0;
+  margin-bottom: 25px;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 15px;
+}
+.report-list-container h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+.report-list-container .list-container {
+  box-shadow: none;
+  padding: 0;
+  border-top: 1px solid var(--border-color);
+  margin-top: -1px; 
+  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+  max-height: 500px; 
+  overflow-y: auto;
+}
+.recharts-wrapper .recharts-yAxis .recharts-cartesian-axis-tick-value {
+  font-size: 0.9rem; 
+}
+
+.paid-status-toggle[data-tooltip]::before {
+  bottom: 50%;
+  top: auto;
+  left: 120%; /* Move para a direita */
+  transform: translateY(50%); /* Centraliza verticalmente */
+}
+
+.paid-status-toggle[data-tooltip]::after {
+  bottom: 50%;
+  top: auto;
+  left: calc(120% - 5px); /* Posição da seta */
+  transform: translateY(50%) rotate(135deg); /* Gira a seta para apontar p/ esquerda */
+}
+
+/* === FIM: CORREÇÃO TOOLTIP CORTADO === */
+
+/* === Responsividade para Relatório === */
+@media (max-width: 992px) {
+  .report-grid {
+    grid-template-columns: 1fr; 
+  }
+}
+@media (max-width: 768px) {
+  .report-header {
+    flex-direction: column; 
+    align-items: stretch;
+  }
+  .report-total {
+    text-align: center;
+    padding: 20px;
+  }
+  .report-title {
+    order: -1; 
+    margin-bottom: 15px;
+  }
+  .report-title h1 { font-size: 1.6rem; }
+  .report-title h2 { font-size: 1.0rem; }
+  .report-total strong { font-size: 1.6rem; }
+
+  .card-style {
+    padding: 20px;
+  }
+  .report-chart-item h3,
+  .report-list-container h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+  }
+}
+/* === FIM: ESTILOS DA PÁGINA DE RELATÓRIO === */

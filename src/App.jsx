@@ -1,3 +1,4 @@
+// ATUALIZADO: src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -7,6 +8,8 @@ import { auth } from './firebase/config'; // Caminho Corrigido
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
+// 1. Importa a nova página (que criaremos a seguir)
+import ReportPage from './pages/ReportPage'; 
 
 // Importando Estilos
 import './styles/Auth.css';
@@ -80,6 +83,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        {/* 2. Adiciona a nova rota de relatório protegida */}
+        <Route
+          path="/report"
+          element={
+            <ProtectedRoute>
+              <ReportPage />
             </ProtectedRoute>
           }
         />

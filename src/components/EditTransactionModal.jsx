@@ -18,6 +18,12 @@ const paymentMethodOptions = [
     { value: 'pix', label: 'Pix' }
 ];
 
+// 1. NOVO ARRAY COM OPÇÕES DE TIPO
+const typeOptions = [
+    { value: 'expense', label: 'Despesa' },
+    { value: 'income', label: 'Ganho' }
+];
+
 const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], onSave }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
@@ -57,7 +63,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
                 setInstallments(transaction.installments || 2);
             }
         }
-    }, [transaction, categoryOptions]); // Dependência corrigida
+    }, [transaction, categoryOptions]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -88,10 +94,13 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
 
     const handleContentClick = (e) => e.stopPropagation();
 
+    // 2. Encontra o objeto {value, label} para o tipo atual
+    const currentTypeOption = typeOptions.find(opt => opt.value === type);
+
     return (
         <div className="modal-overlay open" onClick={onClose}>
             <div className="modal-content" onClick={handleContentClick}>
-                {/* *** NOVO CABEÇALHO DO MODAL *** */}
+                {/* *** CABEÇALHO DO MODAL *** */}
                 <div className="form-container-header" style={{ marginBottom: '20px' }}>
                     <h4>Editar Transação</h4>
                     <div className="form-date-picker">
@@ -103,7 +112,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
                 <form onSubmit={handleSubmit} className="auth-form" style={{ gap: '15px' }}>
                     <input type="text" placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} required />
                     
-                    {/* *** NOVO: Linha Valor + Pagamento *** */}
+                    {/* *** Linha Valor + Pagamento *** */}
                     <div className="form-row">
                         <CurrencyInput value={amount} onChange={setAmount} />
                         <Select
@@ -126,11 +135,14 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
                         classNamePrefix="react-select"
                     />
 
-                    {/* Dropdown de Tipo (Ganho/Gasto) */}
-                    <select value={type} onChange={(e) => setType(e.target.value)}>
-                        <option value="expense">Despesa</option>
-                        <option value="income">Ganho</option>
-                    </select>
+                    {/* 3. SUBSTITUÍDO o <select> por <Select> */}
+                    <Select
+                        options={typeOptions}
+                        value={currentTypeOption}
+                        onChange={(option) => setType(option.value)}
+                        className="react-select-container"
+                        classNamePrefix="react-select"
+                    />
 
                     {type === 'expense' && ['credit', 'debit', 'pix'].includes(paymentMethod?.value) && (
                         <div className="installment-section">

@@ -1,22 +1,11 @@
-/*
-  Dashboard.jsx COMPLETO E FINAL
-  Inclui:
-  - Abas na Sidebar (Transação / Gastos Fixos) com conexão visual.
-  - Separação do Gerenciador de Categorias.
-  - Abas na Lista de Transações (Mensal / Previstos) com conexão visual.
-  - Filtros (Descrição e Categoria) DENTRO do card da lista.
-  - Dropdowns pesquisáveis (react-select) no formulário e filtros.
-  - Lógica de Edição de Gastos Fixos.
-  - Todas as funcionalidades anteriores (Filtros, Gráficos Duplos, Destaque, etc.)
-  - Caminhos de importação SEM extensão.
-*/
-import React, { useState, useMemo, useEffect } from 'react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import React, { useState, useMemo, useEffect, useRef } from 'react'; // useRef adicionado
+import { useNavigate } from 'react-router-dom';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { FaThumbtack } from 'react-icons/fa';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
-import Select from 'react-select'; // Importa o react-select para os filtros E formulário
+import Select from 'react-select'; 
 
 // Importando todos os componentes (SEM extensões)
 import SummaryCard from '../components/SummaryCard';
@@ -64,20 +53,26 @@ const generateChartData = (transactions, type, categories) => {
     });
 };
 
+const typeFilterOptions = [
+    { value: 'all', label: 'Tipo (Todos)' },
+    { value: 'income', label: 'Ganhos' },
+    { value: 'paidExpense', label: 'Desp. Pagas' },
+    { value: 'toPayExpense', label: 'Desp. a Pagar' }
+];
+
 const Dashboard = () => {
-    // ... (Todos os estados inalterados)
     const [user, setUser] = useState(null);
     const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
     const [fixedExpenses, setFixedExpenses] = useState([]);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [loading, setLoading] = useState(true);
-    const [listFilter, setListFilter] = useState('all');
     const [formType, setFormType] = useState('expense');
     const [transactionViewTab, setTransactionViewTab] = useState('monthly');
     const [sidebarTab, setSidebarTab] = useState('transaction');
     const [descriptionFilter, setDescriptionFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState(null);
+    const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]); // Mantém o estado do dropdown
     const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, id: null, type: null });
     const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
@@ -85,6 +80,10 @@ const Dashboard = () => {
     const [editingCategory, setEditingCategory] = useState(null);
     const [isEditFixedExpenseModalOpen, setIsEditFixedExpenseModalOpen] = useState(false);
     const [editingFixedExpense, setEditingFixedExpense] = useState(null);
+    const navigate = useNavigate();
+    
+    // 1. Cria a referência para a lista
+    const transactionListRef = useRef(null);
 
     // Efeito de Autenticação
     useEffect(() => {
@@ -110,16 +109,13 @@ const Dashboard = () => {
         return () => { listenersActive = false; unsubCategories(); unsubTransactions(); unsubFixedExpenses(); };
     }, [user]);
 
-   // *** LÓGICA ATUALIZADA AQUI ***
+    // ... (Funções handle... inalteradas) ...
     const handleAddTransaction = async (transaction) => {
         if (!user) return;
         const { isInstallment, installments, ...rest } = transaction;
-        const dataToAdd = { ...rest, userId: user.uid, date: Timestamp.fromDate(transaction.date), isPaid: false };
-
+        const dataToAdd = { ...rest, userId: user.uid, date: Timestamp.fromDate(transaction.date), isPaid: transaction.isPaid || false };
         try {
-            // Verifica se é parcelado (mesmo que seja 1x)
             if (isInstallment && transaction.type === 'expense') {
-                // Se for mais de 1 parcela, faz o loop
                 if (installments > 1) {
                     const installmentAmount = transaction.amount / installments;
                     const batch = writeBatch(db);
@@ -131,16 +127,13 @@ const Dashboard = () => {
                     }
                     await batch.commit();
                 } else {
-                    // Se for 1 parcela (installments === 1), adiciona com (1/1)
                     await addDoc(collection(db, 'transactions'), { ...dataToAdd, description: `${transaction.description} (1/1)` });
                 }
             } else {
-                // Não é parcelado, apenas adiciona
                 await addDoc(collection(db, 'transactions'), dataToAdd);
             }
         } catch (error) { console.error("Erro Adicionar Transação:", error); }
     };
-    
     const handleUpdateTransaction = async (updatedTransaction) => {
         if (!user || !updatedTransaction.id) return;
         try {
@@ -164,12 +157,11 @@ const Dashboard = () => {
         const oldCategory = categories.find(c => c.id === updatedCategory.id);
         const oldName = oldCategory ? oldCategory.name : null;
         const newName = updatedCategory.name.trim();
-        if (!oldName || oldName === newName) { // Apenas atualiza cor
+        if (!oldName || oldName === newName) {
             try { await updateDoc(doc(db, 'categories', updatedCategory.id), { color: updatedCategory.color }); }
             catch (error) { console.error("Erro Atualizar Cor Categoria:", error); }
             setIsEditCategoryModalOpen(false); setEditingCategory(null); return;
         }
-        // Atualiza nome, cor e propaga
         try {
             const batch = writeBatch(db);
             batch.update(doc(db, 'categories', updatedCategory.id), { name: newName, color: updatedCategory.color });
@@ -181,12 +173,12 @@ const Dashboard = () => {
         } catch (error) { console.error("Erro Atualizar Categoria & Transações:", error); alert("Erro ao atualizar."); }
     };
     const handleTogglePaidStatus = async (transaction) => {
-        if (transaction.isFixed && !transaction.isPaid) { // Pagar Gasto Fixo (cria transação real)
+        if (transaction.isFixed && !transaction.isPaid) { 
             const realTransaction = { ...transaction };
             delete realTransaction.id; delete realTransaction.isFixed;
             realTransaction.isPaid = true;
-            await handleAddTransaction(realTransaction);
-        } else if (!transaction.isFixed && transaction.id) { // Toggle transação normal
+            await handleAddTransaction(realTransaction); 
+        } else if (!transaction.isFixed && transaction.id) { 
             try { await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: !transaction.isPaid }); }
             catch (error) { console.error("Erro Toggle Pago:", error); }
         }
@@ -200,7 +192,7 @@ const Dashboard = () => {
         const { id, type } = deleteModalState;
         if (!id || !type || type === 'fixedExpense') return;
         const collectionName = type === 'transaction' ? 'transactions' : 'categories';
-        const stateSetter = type === 'transaction' ? setTransactions : setCategories;
+        const stateSetter = type ==='transaction' ? setTransactions : setCategories;
         const originalState = type === 'transaction' ? [...transactions] : [...categories];
         setDeleteModalState({ isOpen: false, id: null, type: null });
         stateSetter(prev => prev.filter(item => item.id !== id));
@@ -238,7 +230,31 @@ const Dashboard = () => {
     const openEditTransactionModal = (transaction) => { setEditingTransaction(transaction); setIsEditTransactionModalOpen(true); };
     const openEditCategoryModal = (category) => { setEditingCategory(category); setIsEditCategoryModalOpen(true); };
     const openEditFixedExpenseModal = (expense) => { setEditingFixedExpense(expense); setIsEditFixedExpenseModalOpen(true); };
-    const handleFilterClick = (filterType) => setListFilter(current => (current === filterType ? 'all' : filterType));
+    
+    // 2. NOVA FUNÇÃO para clique nos cards (define filtro E rola)
+    const handleCardFilterAndScroll = (filterValue) => {
+        // Encontra o objeto de opção correspondente
+        const newFilter = typeFilterOptions.find(opt => opt.value === filterValue) || typeFilterOptions[0];
+        
+        // Define o estado do filtro (se for diferente)
+        if (typeFilter.value === filterValue) {
+            setTypeFilter(typeFilterOptions[0]); // Se clicar de novo, volta para 'Todos'
+        } else {
+            setTypeFilter(newFilter);
+        }
+        
+        // Rola suavemente para a lista
+        transactionListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    
+    const handleChartClick = (type) => {
+        navigate('/report', {
+            state: {
+                reportType: type,
+                reportMonth: currentMonth
+            }
+        });
+    };
 
     // --- LÓGICA PRINCIPAL E CÁLCULOS ---
     const allTransactionsForMonth = useMemo(() => {
@@ -264,13 +280,12 @@ const Dashboard = () => {
     const expenseChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'expense', categories), [allTransactionsForMonth, categories]);
     const incomeChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'income', categories), [allTransactionsForMonth, categories]);
 
-    // Opções para o filtro de categoria
     const categoryFilterOptions = useMemo(() => [
         { value: '', label: 'Categoria (Todas)' },
         ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label))
     ], [categories]);
 
-    // Filtra lista para exibição
+    // Usa 'typeFilter.value' para filtrar
     const transactionsForDisplay = useMemo(() => {
         let baseList;
         if (transactionViewTab === 'fixed') {
@@ -278,26 +293,28 @@ const Dashboard = () => {
         } else {
              baseList = allTransactionsForMonth.filter(t => !t.isFixed || (t.isFixed && t.isPaid));
         }
-        let filteredByCard = baseList;
-        switch (listFilter) {
-            case 'income': filteredByCard = baseList.filter(t => t.type === 'income'); break;
-            case 'paidExpense': filteredByCard = baseT.filter(t => t.type === 'expense' && t.isPaid); break;
-            case 'toPayExpense': filteredByCard = baseList.filter(t => t.type === 'expense' && !t.isPaid); break;
-            default: break;
+        
+        let filteredByType = baseList;
+        switch (typeFilter.value) { // Usa o estado do dropdown
+            case 'income': filteredByType = baseList.filter(t => t.type === 'income'); break;
+            case 'paidExpense': filteredByType = baseList.filter(t => t.type === 'expense' && t.isPaid); break;
+            case 'toPayExpense': filteredByType = baseList.filter(t => t.type === 'expense' && !t.isPaid); break;
+            default: break; // 'all'
         }
+        
         const descLower = descriptionFilter.toLowerCase();
         const catFilterValue = categoryFilter ? categoryFilter.value.toLowerCase() : '';
-        return filteredByCard.filter(t =>
+        
+        return filteredByType.filter(t =>
             (t.description?.toLowerCase().includes(descLower) ?? true) &&
             (catFilterValue === '' || (t.category?.toLowerCase() === catFilterValue))
         );
-    }, [listFilter, transactionViewTab, allTransactionsForMonth, descriptionFilter, categoryFilter, categories]);
+    }, [typeFilter, transactionViewTab, allTransactionsForMonth, descriptionFilter, categoryFilter, categories]); 
 
     if (loading) return <div>Carregando...</div>;
 
     return (
         <>
-            {/* Seção de Modais */}
             <ConfirmationModal isOpen={deleteModalState.isOpen} onClose={() => setDeleteModalState({ isOpen: false, id: null, type: null })} onConfirm={deleteModalState.type === 'fixedExpense' ? handleConfirmDeleteFixedExpense : handleConfirmDelete} message="Esta ação é permanente..." />
             <EditTransactionModal isOpen={isEditTransactionModalOpen} onClose={() => { setIsEditTransactionModalOpen(false); setEditingTransaction(null); }} transaction={editingTransaction} categories={categories} onSave={handleUpdateTransaction} />
             <EditCategoryModal isOpen={isEditCategoryModalOpen} onClose={() => { setIsEditCategoryModalOpen(false); setEditingCategory(null); }} category={editingCategory} onSave={handleUpdateCategory} />
@@ -313,20 +330,20 @@ const Dashboard = () => {
                 </header>
                 <main>
                     <div className="summary-grid">
-                        <SummaryCard title="Ganhos do Mês" value={incomeTotal} type="income" onClick={() => handleFilterClick('income')} isActive={listFilter === 'income'} />
-                        <SummaryCard title="Despesas Pagas" value={expensePaid} type="expense" onClick={() => handleFilterClick('paidExpense')} isActive={listFilter === 'paidExpense'} />
-                        <SummaryCard title="Despesas a Pagar" value={expenseToPay} type="expense" onClick={() => handleFilterClick('toPayExpense')} isActive={listFilter === 'toPayExpense'} />
-                        <SummaryCard title="Saldo (Ganhos - Pagos)" value={balance} type="balance" />
+                        {/* 3. RE-ADICIONADO: onClick (com nova função) e isActive (usando typeFilter) */}
+                        <SummaryCard title="Ganhos do Mês" value={incomeTotal} type="income" onClick={() => handleCardFilterAndScroll('income')} isActive={typeFilter.value === 'income'} data-tooltip="Filtrar lista: Mostrar apenas Ganhos do Mês" />
+                        <SummaryCard title="Despesas Pagas" value={expensePaid} type="expense" onClick={() => handleCardFilterAndScroll('paidExpense')} isActive={typeFilter.value === 'paidExpense'} data-tooltip="Filtrar lista: Mostrar apenas Despesas Pagas" />
+                        <SummaryCard title="Despesas a Pagar" value={expenseToPay} type="expense" onClick={() => handleCardFilterAndScroll('toPayExpense')} isActive={typeFilter.value === 'toPayExpense'} data-tooltip="Filtrar lista: Mostrar apenas Despesas a Pagar" />
+                        <SummaryCard title="Saldo (Ganhos - Pagos)" value={balance} type="balance" data-tooltip="Saldo do Mês (Ganhos - Despesas Pagas)" />
                     </div>
                     <div className="main-layout">
+                        {/* ... (Sidebar inalterada) ... */}
                         <div className="sidebar">
-                            {/* Abas da Sidebar */}
                             <div className="sidebar-tabs">
                                 <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Adicionar Transação </button>
                                 <button className={`sidebar-tab-button ${sidebarTab === 'fixed' ? 'active' : ''}`} onClick={() => setSidebarTab('fixed')}> Gastos Fixos </button>
                             </div>
                             
-                            {/* Container abaixo das abas */}
                             <div className="sidebar-content-container">
                                 {sidebarTab === 'transaction' && (
                                     <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} />
@@ -336,13 +353,17 @@ const Dashboard = () => {
                                 )}
                             </div>
 
-                            {/* Gerenciador de Categorias (separado) */}
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
                         </div>
                         <div className="content">
-                            {/* Gráficos Lado a Lado com Destaque */}
+                            {/* ... (Gráficos inalterados) ... */}
                             <div className="charts-grid">
-                                <div className={`chart-item ${formType === 'income' ? 'highlighted' : ''}`}>
+                                <div 
+                                    className="chart-item"
+                                    onClick={() => handleChartClick('income')}
+                                    style={{ cursor: 'pointer' }}
+                                    data-tooltip="Ir para página de relatório de ganhos"
+                                >
                                     <h4>Ganhos por Categoria</h4>
                                     {incomeChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
@@ -350,12 +371,17 @@ const Dashboard = () => {
                                                 <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                                                     {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
-                                                <Tooltip content={<CustomTooltip />} /> <Legend />
+                                                <Tooltip content={<CustomTooltip />} />
                                             </PieChart>
                                         </ResponsiveContainer>
                                     ) : <p className="empty-message">Nenhum ganho neste mês.</p>}
                                 </div>
-                                <div className={`chart-item ${formType === 'expense' ? 'highlighted' : ''}`}>
+                                <div 
+                                    className="chart-item"
+                                    onClick={() => handleChartClick('expense')}
+                                    style={{ cursor: 'pointer' }}
+                                    data-tooltip="Ir para página de relatório de gastos"
+                                >
                                     <h4>Gastos por Categoria</h4>
                                     {expenseChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
@@ -363,30 +389,38 @@ const Dashboard = () => {
                                                 <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                                                     {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
-                                                <Tooltip content={<CustomTooltip />} /> <Legend />
+                                                <Tooltip content={<CustomTooltip />} />
                                             </PieChart>
                                         </ResponsiveContainer>
                                     ) : <p className="empty-message">Nenhum gasto neste mês.</p>}
                                 </div>
                             </div>
 
-                            {/* Seletor de Abas para a Lista */}
+                            {/* ... (Abas da lista inalteradas) ... */}
                             <div className="transaction-view-tabs">
                                 <button className={`tab-button ${transactionViewTab === 'monthly' ? 'active' : ''}`} onClick={() => setTransactionViewTab('monthly')}> Transações do Mês </button>
                                 <button className={`tab-button ${transactionViewTab === 'fixed' ? 'active' : ''}`} onClick={() => setTransactionViewTab('fixed')}> Gastos Fixos Previstos </button>
                             </div>
 
-                            {/* Container da Lista (com filtros e lista) */}
-                            <div className="list-container">
+                            {/* 4. ADICIONADO ref={transactionListRef} */}
+                            <div className="list-container" ref={transactionListRef}>
                                 <div className="list-container-header">
                                     <h3>{transactionViewTab === 'monthly' ? 'Transações do Mês' : 'Gastos Fixos Previstos'}</h3>
                                     <div className="transaction-list-filters">
                                         <input
                                             type="text"
-                                            placeholder="🔍 Filtrar..."
+                                            placeholder="🔍 Filtrar por descrição..."
                                             value={descriptionFilter}
                                             onChange={(e) => setDescriptionFilter(e.target.value)}
                                             className="filter-input description-filter"
+                                        />
+                                        {/* Dropdown de Tipo */}
+                                        <Select
+                                            options={typeFilterOptions}
+                                            value={typeFilter}
+                                            onChange={setTypeFilter}
+                                            className="filter-input type-filter"
+                                            classNamePrefix="react-select"
                                         />
                                         <Select
                                             options={categoryFilterOptions}
