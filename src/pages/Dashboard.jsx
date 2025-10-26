@@ -1,20 +1,22 @@
 /*
-  Dashboard.jsx COMPLETO E FINAL (com Aba Orçamentos)
-  - Adicionada Aba "Orçamentos" na Sidebar.
-  - Importado e renderizado o componente BudgetManager.
-  - Passadas props necessárias para BudgetManager.
-  - Mantidas todas as funcionalidades anteriores (filtros, scroll, multi-categoria, etc.).
+  Dashboard.jsx COMPLETO E FINAL (com Progresso Orçamentos e onSnapshot)
+  - Adicionado estado e busca para 'budgets' usando onSnapshot.
+  - O progresso dos orçamentos agora atualiza em tempo real.
+  - Calculado 'expensesByCategory' via useMemo.
+  - Importado e renderizado BudgetProgressList na sidebar.
+  - Mantidas todas as funcionalidades anteriores.
 */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { FaThumbtack } from 'react-icons/fa';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, getDocs, writeBatch } from 'firebase/firestore';
+// onSnapshot e query adicionados/confirmados na importação
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, writeBatch, getDocs } from 'firebase/firestore'; 
 import { auth, db } from '../firebase/config';
-import Select from 'react-select';
+import Select from 'react-select'; 
 
-// Importando todos os componentes (SEM extensões)
+// Importando componentes
 import SummaryCard from '../components/SummaryCard';
 import MonthNavigator from '../components/MonthNavigator';
 import CategoryManager from '../components/CategoryManager';
@@ -25,8 +27,8 @@ import EditTransactionModal from '../components/EditTransactionModal';
 import EditCategoryModal from '../components/EditCategoryModal';
 import FixedExpensesManager from '../components/FixedExpensesManager';
 import EditFixedExpenseModal from '../components/EditFixedExpenseModal';
-// IMPORTA O NOVO COMPONENTE
-import BudgetManager from '../components/BudgetManager';
+import BudgetManager from '../components/BudgetManager'; 
+import BudgetProgressList from '../components/BudgetProgressList'; 
 
 // Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
@@ -71,18 +73,21 @@ const typeFilterOptions = [
 ];
 
 const Dashboard = () => {
+    // Estados
     const [user, setUser] = useState(null);
     const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
     const [fixedExpenses, setFixedExpenses] = useState([]);
+    const [budgets, setBudgets] = useState([]); // Orçamentos do mês atual
     const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); 
+    // loadingBudgets removido, usamos o loading geral
     const [formType, setFormType] = useState('expense');
     const [transactionViewTab, setTransactionViewTab] = useState('monthly');
-    const [sidebarTab, setSidebarTab] = useState('transaction'); // Estado da Aba da Sidebar
+    const [sidebarTab, setSidebarTab] = useState('transaction'); 
     const [descriptionFilter, setDescriptionFilter] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState(null); // Pode ser array
-    const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]);
+    const [categoryFilter, setCategoryFilter] = useState(null); 
+    const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]); 
     const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, id: null, type: null });
     const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
@@ -99,45 +104,88 @@ const Dashboard = () => {
         return () => unsubAuth();
     }, []);
 
-    // Efeito para buscar todos os dados do Firestore
+    // useEffect para buscar TUDO com onSnapshot
     useEffect(() => {
         if (!user) {
-            setTransactions([]); setCategories([]); setFixedExpenses([]); setLoading(false); return;
+            setTransactions([]); setCategories([]); setFixedExpenses([]); setBudgets([]); 
+            setLoading(false); 
+            return;
         }
-        setLoading(true);
+        setLoading(true); 
         let listenersActive = true;
-        const unsubCategories = onSnapshot(query(collection(db, 'categories'), where('userId', '==', user.uid)), (snap) => { if (listenersActive) setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() }))) }, err => { console.error("Erro Cat:", err); if (listenersActive) setLoading(false); });
+        let dataLoaded = { categories: false, transactions: false, fixedExpenses: false, budgets: false };
+
+        const checkLoadingDone = () => {
+            if (listenersActive && dataLoaded.categories && dataLoaded.transactions && dataLoaded.fixedExpenses && dataLoaded.budgets) {
+                setLoading(false);
+            }
+        };
+
+        // Listeners existentes
+        const unsubCategories = onSnapshot(query(collection(db, 'categories'), where('userId', '==', user.uid)), (snap) => { 
+            if (listenersActive) {
+                setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+                dataLoaded.categories = true;
+                checkLoadingDone();
+            }
+        }, err => { console.error("Erro Cat:", err); if (listenersActive) setLoading(false); });
+        
         const unsubTransactions = onSnapshot(query(collection(db, 'transactions'), where('userId', '==', user.uid)), (snap) => {
             if (listenersActive) {
                 setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().date.toDate() })));
-                setLoading(false);
+                dataLoaded.transactions = true;
+                checkLoadingDone();
             }
         }, err => { console.error("Erro Trans:", err); if (listenersActive) setLoading(false); });
-        const unsubFixedExpenses = onSnapshot(query(collection(db, 'fixedExpenses'), where('userId', '==', user.uid)), (snap) => { if (listenersActive) setFixedExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() }))) }, err => console.error("Erro Fixed:", err));
         
-        // Listener para Orçamentos (Budgets) - Adicionado para pegar dados necessários para o futuro
-        // Se BudgetManager buscar seus próprios dados, este listener pode não ser estritamente necessário aqui AGORA,
-        // mas pode ser útil para mostrar progresso diretamente no Dashboard depois.
-        // const unsubBudgets = onSnapshot(query(collection(db, 'budgets'), where('userId', '==', user.uid)), (snap) => { /* lógica para armazenar budgets */ }, err => console.error("Erro Budgets:", err));
+        const unsubFixedExpenses = onSnapshot(query(collection(db, 'fixedExpenses'), where('userId', '==', user.uid)), (snap) => { 
+            if (listenersActive) {
+                setFixedExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+                dataLoaded.fixedExpenses = true;
+                checkLoadingDone();
+            }
+        }, err => console.error("Erro Fixed:", err));
+        
+        // ** LISTENER onSnapshot para Orçamentos **
+        const month = currentMonth.getMonth();
+        const year = currentMonth.getFullYear();
+        const budgetQuery = query(collection(db, 'budgets'),
+            where('userId', '==', user.uid),
+            where('month', '==', month),
+            where('year', '==', year)
+        );
+        const unsubBudgets = onSnapshot(budgetQuery, (snap) => {
+             if (listenersActive) {
+                setBudgets(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                dataLoaded.budgets = true;
+                checkLoadingDone();
+            }
+        }, (error) => {
+            console.error("Erro ao buscar orçamentos (onSnapshot):", error);
+            if (listenersActive) {
+                 setBudgets([]); 
+                 dataLoaded.budgets = true; // Marca como carregado mesmo com erro para não bloquear loading
+                 checkLoadingDone();
+            }
+        });
 
+        // Função de limpeza
         return () => { 
             listenersActive = false; 
             unsubCategories(); 
             unsubTransactions(); 
             unsubFixedExpenses(); 
-            // unsubBudgets(); // Descomente se adicionar o listener acima
+            unsubBudgets(); // Limpa o novo listener
         };
-    }, [user]);
+    }, [user, currentMonth]); 
 
     // useEffect para rolar a lista para o topo ao mudar filtros
     useEffect(() => {
         const listElement = transactionListRef.current?.querySelector('ul');
-        if (listElement) {
-            listElement.scrollTop = 0;
-        }
+        if (listElement) { listElement.scrollTop = 0; }
     }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
 
-    // Funções handle... (sem alterações internas, apenas a lista completa)
+    // Funções handle... (completas, mas sem alterações internas)/ Funções handle... (sem alterações internas, apenas a lista completa)
     const handleAddTransaction = async (transaction) => {
         if (!user) return;
         const { isInstallment, installments, ...rest } = transaction;
@@ -258,25 +306,12 @@ const Dashboard = () => {
     const openEditTransactionModal = (transaction) => { setEditingTransaction(transaction); setIsEditTransactionModalOpen(true); };
     const openEditCategoryModal = (category) => { setEditingCategory(category); setIsEditCategoryModalOpen(true); };
     const openEditFixedExpenseModal = (expense) => { setEditingFixedExpense(expense); setIsEditFixedExpenseModalOpen(true); };
-    
     const handleCardFilterAndScroll = (filterValue) => {
         const newFilter = typeFilterOptions.find(opt => opt.value === filterValue) || typeFilterOptions[0];
-        if (typeFilter.value === filterValue) {
-            setTypeFilter(typeFilterOptions[0]); 
-        } else {
-            setTypeFilter(newFilter);
-        }
+        if (typeFilter.value === filterValue) { setTypeFilter(typeFilterOptions[0]); } else { setTypeFilter(newFilter); }
         transactionListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
-    
-    const handleChartClick = (type) => {
-        navigate('/report', {
-            state: {
-                reportType: type,
-                reportMonth: currentMonth
-            }
-        });
-    };
+    const handleChartClick = (type) => { navigate('/report', { state: { reportType: type, reportMonth: currentMonth } }); };
 
     // --- LÓGICA PRINCIPAL E CÁLCULOS ---
     const allTransactionsForMonth = useMemo(() => {
@@ -301,20 +336,13 @@ const Dashboard = () => {
 
     const expenseChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'expense', categories), [allTransactionsForMonth, categories]);
     const incomeChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'income', categories), [allTransactionsForMonth, categories]);
-
     const categoryFilterOptions = useMemo(() => [ 
         ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label))
     ], [categories]);
-
-    // Transações para exibição (com filtro multi-categoria)
     const transactionsForDisplay = useMemo(() => {
         let baseList;
-        if (transactionViewTab === 'fixed') {
-             baseList = allTransactionsForMonth.filter(t => t.isFixed);
-        } else {
-             baseList = allTransactionsForMonth.filter(t => !t.isFixed || (t.isFixed && t.isPaid));
-        }
-        
+        if (transactionViewTab === 'fixed') { baseList = allTransactionsForMonth.filter(t => t.isFixed); } 
+        else { baseList = allTransactionsForMonth.filter(t => !t.isFixed || (t.isFixed && t.isPaid)); }
         let filteredByType = baseList;
         switch (typeFilter.value) { 
             case 'income': filteredByType = baseList.filter(t => t.type === 'income'); break;
@@ -322,10 +350,8 @@ const Dashboard = () => {
             case 'toPayExpense': filteredByType = baseList.filter(t => t.type === 'expense' && !t.isPaid); break;
             default: break; 
         }
-        
         const descLower = descriptionFilter.toLowerCase();
         const selectedCategoryNames = categoryFilter ? categoryFilter.map(opt => opt.value.toLowerCase()) : [];
-        
         return filteredByType.filter(t => {
             const descriptionMatch = t.description?.toLowerCase().includes(descLower) ?? true;
             const categoryMatch = selectedCategoryNames.length === 0 || selectedCategoryNames.includes(t.category?.toLowerCase());
@@ -333,7 +359,18 @@ const Dashboard = () => {
         });
     }, [typeFilter, transactionViewTab, allTransactionsForMonth, descriptionFilter, categoryFilter, categories]); 
 
-    if (loading) return <div>Carregando...</div>;
+    // Calcula gastos por categoria
+    const expensesByCategory = useMemo(() => {
+        const monthlyExpenses = allTransactionsForMonth.filter(t => t.type === 'expense');
+        return monthlyExpenses.reduce((acc, transaction) => {
+            const categoryName = transaction.category || 'Outros';
+            acc[categoryName] = (acc[categoryName] || 0) + transaction.amount;
+            return acc;
+        }, {});
+    }, [allTransactionsForMonth]); 
+
+
+    if (loading) return <div>Carregando dados...</div>; 
 
     return (
         <>
@@ -366,59 +403,30 @@ const Dashboard = () => {
                             </div>
                             
                             <div className="sidebar-content-container">
-                                {sidebarTab === 'transaction' && (
-                                    <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} />
-                                )}
-                                {sidebarTab === 'fixed' && (
-                                    <FixedExpensesManager categories={categories} onAddFixedExpense={handleAddFixedExpense} fixedExpenses={fixedExpenses} onDeleteFixedExpense={handleDeleteFixedExpense} onEditFixedExpense={openEditFixedExpenseModal} />
-                                )}
-                                {sidebarTab === 'budget' && (
-                                    <BudgetManager 
-                                        categories={categories} 
-                                        currentMonth={currentMonth} 
-                                    />
-                                )}
+                                {sidebarTab === 'transaction' && ( <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} /> )}
+                                {sidebarTab === 'fixed' && ( <FixedExpensesManager categories={categories} onAddFixedExpense={handleAddFixedExpense} fixedExpenses={fixedExpenses} onDeleteFixedExpense={handleDeleteFixedExpense} onEditFixedExpense={openEditFixedExpenseModal} /> )}
+                                {sidebarTab === 'budget' && ( <BudgetManager categories={categories} currentMonth={currentMonth} /> )}
                             </div>
 
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
-                        </div>
+
+                            {/* Renderiza a lista de progresso dos orçamentos */}
+                            <BudgetProgressList 
+                                budgets={budgets} 
+                                expensesByCategory={expensesByCategory} 
+                            />
+                        
+                        </div> {/* Fim da Sidebar */}
+
                         <div className="content">
                             <div className="charts-grid">
-                                <div 
-                                    className="chart-item"
-                                    onClick={() => handleChartClick('income')}
-                                    style={{ cursor: 'pointer' }}
-                                    data-tooltip="Ir para página de relatório de ganhos"
-                                >
+                                <div className="chart-item" onClick={() => handleChartClick('income')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de ganhos">
                                     <h4>Ganhos por Categoria</h4>
-                                    {incomeChartData.length > 0 ? (
-                                        <ResponsiveContainer width="100%" height={250}>
-                                            <PieChart>
-                                                <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
-                                                    {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)}
-                                                </Pie>
-                                                <Tooltip content={<CustomTooltip />} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    ) : <p className="empty-message">Nenhum ganho neste mês.</p>}
+                                    {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum ganho neste mês.</p>}
                                 </div>
-                                <div 
-                                    className="chart-item"
-                                    onClick={() => handleChartClick('expense')}
-                                    style={{ cursor: 'pointer' }}
-                                    data-tooltip="Ir para página de relatório de gastos"
-                                >
+                                <div className="chart-item" onClick={() => handleChartClick('expense')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de gastos">
                                     <h4>Gastos por Categoria</h4>
-                                    {expenseChartData.length > 0 ? (
-                                        <ResponsiveContainer width="100%" height={250}>
-                                            <PieChart>
-                                                <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
-                                                    {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)}
-                                                </Pie>
-                                                <Tooltip content={<CustomTooltip />} />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    ) : <p className="empty-message">Nenhum gasto neste mês.</p>}
+                                    {expenseChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum gasto neste mês.</p>}
                                 </div>
                             </div>
 
@@ -431,45 +439,15 @@ const Dashboard = () => {
                                 <div className="list-container-header">
                                     <h3>{transactionViewTab === 'monthly' ? 'Transações do Mês' : 'Gastos Fixos Previstos'}</h3>
                                     <div className="transaction-list-filters">
-                                        <input
-                                            type="text"
-                                            placeholder="🔍 Filtrar por descrição..."
-                                            value={descriptionFilter}
-                                            onChange={(e) => setDescriptionFilter(e.target.value)}
-                                            className="filter-input description-filter"
-                                        />
-                                        <Select
-                                            options={typeFilterOptions}
-                                            value={typeFilter}
-                                            onChange={setTypeFilter}
-                                            className="filter-input type-filter"
-                                            classNamePrefix="react-select"
-                                        />
-                                        <Select
-                                            options={categoryFilterOptions}
-                                            value={categoryFilter}
-                                            onChange={setCategoryFilter}
-                                            placeholder="Categoria(s)..." 
-                                            isClearable={true} 
-                                            isMulti 
-                                            closeMenuOnSelect={false} 
-                                            hideSelectedOptions={false} 
-                                            controlShouldRenderValue={false} 
-                                            className="filter-input category-filter"
-                                            classNamePrefix="react-select"
-                                        />
+                                        <input type="text" placeholder="🔍 Filtrar por descrição..." value={descriptionFilter} onChange={(e) => setDescriptionFilter(e.target.value)} className="filter-input description-filter" />
+                                        <Select options={typeFilterOptions} value={typeFilter} onChange={setTypeFilter} className="filter-input type-filter" classNamePrefix="react-select" />
+                                        <Select options={categoryFilterOptions} value={categoryFilter} onChange={setCategoryFilter} placeholder="Categoria(s)..." isClearable={true} isMulti closeMenuOnSelect={false} hideSelectedOptions={false} controlShouldRenderValue={false} className="filter-input category-filter" classNamePrefix="react-select" />
                                     </div>
                                 </div>
-                                    <TransactionList
-                                        transactions={transactionsForDisplay}
-                                        categories={categories}
-                                        onDeleteTransaction={(id, type) => handleDeleteRequest(id, type)}
-                                        onEditTransaction={openEditTransactionModal}
-                                        onTogglePaid={handleTogglePaidStatus}
-                                    />
+                                    <TransactionList transactions={transactionsForDisplay} categories={categories} onDeleteTransaction={(id, type) => handleDeleteRequest(id, type)} onEditTransaction={openEditTransactionModal} onTogglePaid={handleTogglePaidStatus} />
                             </div>
-                        </div>
-                    </div>
+                        </div> {/* Fim do Content */}
+                    </div> {/* Fim do Main Layout */}
                 </main>
             </div>
         </>

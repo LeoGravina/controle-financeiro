@@ -59,7 +59,7 @@ header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weig
 .summary-card[data-type="balance"] span { color: var(--primary-color); } .summary-card[data-type="balance"].negative span { color: var(--expense-color); }
 
 /* === CONTAINERS GENÉRICOS === */
-.form-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager, .budget-manager { 
+.form-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager, .budget-manager, .budget-progress-container { /* Adicionado .budget-progress-container */
   background: var(--card-bg-color); padding: 30px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md);
 }
 .list-container {
@@ -486,3 +486,18 @@ input:focus, .currency-input:focus,
 .budget-actions .action-button.save:hover { background-color: var(--income-bg-light); color: var(--income-color); }
 .budget-actions .action-button.delete:hover, .budget-actions .action-button.cancel:hover { background-color: var(--expense-bg-light); color: var(--expense-color); }
 /* === FIM: ESTILOS BUDGET MANAGER === */
+
+/* === INÍCIO: ESTILOS BUDGET PROGRESS LIST === */
+.budget-progress-container { margin-top: 30px; background: var(--card-bg-color); padding: 25px 30px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); }
+.budget-progress-container h4 { font-size: 1.1rem; font-weight: 600; color: var(--text-color); margin-top: 0; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+.budget-progress-list { list-style: none; padding: 0; margin: 0; max-height: 400px; overflow-y: auto; }
+.budget-progress-item { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--input-bg-color); }
+.budget-progress-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.budget-item-info { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.budget-item-category { font-weight: 500; color: var(--text-color); font-size: 0.95rem; }
+.budget-item-values { font-size: 0.85rem; color: var(--text-light-color); font-weight: 500; white-space: nowrap; }
+.budget-item-values.over-budget-text { color: var(--expense-color); font-weight: 600; }
+.progress-bar-container { width: 100%; height: 10px; background-color: var(--input-bg-color); border-radius: 5px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out; }
+.over-budget-warning { display: block; margin-top: 5px; font-size: 0.75rem; color: var(--expense-color); font-weight: 600; text-align: right; }
+/* === FIM: ESTILOS BUDGET PROGRESS LIST === */
