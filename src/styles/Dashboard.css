@@ -516,3 +516,129 @@ input:focus, .currency-input:focus,
 .goal-delete-button { flex-shrink: 0; font-size: 0.9rem; width: 28px; height: 28px; }
 .goal-delete-button:hover { background-color: var(--expense-bg-light); color: var(--expense-color); }
 /* === FIM: ESTILOS GOAL MANAGER === */
+
+/* Verifique/Adicione esta regra (perto da linha 301) */
+.action-button:hover, .delete-button:hover { /* Garante que .delete-button tenha o hover */
+  background-color: var(--expense-bg-light); 
+  color: var(--expense-color); 
+}
+
+/* Ajuste opcional para o botão delete da meta, se necessário */
+.goal-delete-button {
+delete-list-button { background: none; border: none; color: var(--text-light-color); border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 1.5rem; display: flex; justify-content: center; align-items: center; transition: all var(--transition-fast); opacity: 0; font-weight: bold; }
+.list-container li:hover .delete-list-button { opacity: 0.6; }
+.delete-list-button:hover { opacity: 1; background-color: var(--expense-bg-light); color: var(--expense-color); transform: scale(1.1); }
+.delete-list-button:disabled { opacity: 0.1; cursor: not-allowed; } .delete-list-button:disabled:hover { background: none; color: var(--text-light-color); transform: none; }
+}
+.goal-delete-button:hover {
+  /* Pode sobrescrever o hover aqui se quiser um diferente */
+  /* background-color: var(--expense-bg-light); */
+  /* color: var(--expense-color); */
+}
+
+/* === INÍCIO: ESTILOS GOAL PROGRESS LIST === */
+
+.goal-progress-container {
+  margin-top: 30px; /* Espaço acima, igual ao BudgetProgress */
+  background: var(--card-bg-color); 
+  padding: 25px 30px; 
+  border-radius: var(--border-radius-lg); 
+  box-shadow: var(--shadow-md);
+}
+
+.goal-progress-container h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-top: 0;
+  margin-bottom: 20px; 
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.goal-progress-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 400px; /* Altura máxima com scroll */
+  overflow-y: auto;
+}
+
+.goal-progress-item {
+  margin-bottom: 18px; 
+  padding-bottom: 18px; 
+  border-bottom: 1px solid var(--input-bg-color); 
+}
+.goal-progress-item:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+/* Estilo opcional para meta concluída */
+.goal-progress-item.complete .goal-item-name {
+    /* text-decoration: line-through; */ /* Pode adicionar se quiser riscar */
+    /* color: var(--text-light-color); */
+}
+
+.goal-item-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline; 
+  margin-bottom: 8px; 
+}
+
+.goal-item-name {
+  font-weight: 500;
+  color: var(--text-color);
+  font-size: 0.95rem;
+  display: flex; /* Para alinhar ícone se adicionar */
+  align-items: center;
+}
+
+.goal-item-values {
+  font-size: 0.85rem;
+  color: var(--text-light-color);
+  font-weight: 500;
+  white-space: nowrap; 
+}
+.goal-item-values.complete-text {
+    color: var(--income-color); /* Destaca valores quando concluído */
+    font-weight: 600;
+}
+
+/* Reutiliza a classe da barra de progresso do orçamento, mas pode ter cor diferente */
+.goal-progress-bar-container {
+  width: 100%;
+  height: 10px; 
+  background-color: var(--input-bg-color); 
+  border-radius: 5px; 
+  overflow: hidden; 
+}
+
+.goal-progress-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out; 
+}
+
+/* Estilo para futuro botão "Contribuir" */
+.add-to-goal-button {
+    background-color: var(--primary-light);
+    color: var(--primary-hover);
+    border: none;
+    border-radius: var(--border-radius-sm);
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+    float: right; /* Alinha à direita */
+    transition: all var(--transition-fast);
+}
+.add-to-goal-button:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+
+/* === FIM: ESTILOS GOAL PROGRESS LIST === */ 

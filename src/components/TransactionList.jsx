@@ -28,8 +28,6 @@ const TransactionList = ({ transactions = [], categories = [], onDeleteTransacti
                                   style={{ cursor: t.isFixed ? 'default' : 'pointer' }}
                                 >
                                     {t.type === 'expense' && (
-                                        // *** ATUALIZADO AQUI ***
-                                        // Adicionado 'data-tooltip' com a descrição dinâmica
                                         <label 
                                             className="paid-status-toggle" 
                                             onClick={handleActionClick} 

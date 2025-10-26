@@ -3,7 +3,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, where, onSnapshot, addDoc, Timestamp, deleteDoc, doc } from 'firebase/firestore'; // Importações do Firestore
 import { db, auth } from '../firebase/config';
 import CurrencyInput from './CurrencyInput';
-import { FaTrash } from 'react-icons/fa'; // Ícone para deletar
 
 const GoalManager = () => {
     const [goals, setGoals] = useState([]); // Metas do usuário
@@ -132,11 +131,11 @@ const GoalManager = () => {
                              {/* Futuramente adicionar barra de progresso aqui */}
                            </div>
                            <button 
-                                onClick={() => handleDeleteGoal(goal.id, goal.goalName)} 
-                                className="action-button delete goal-delete-button" 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteGoal(goal.id, goal.goalName); }} 
+                                className="action-button delete-button goal-delete-button" 
                                 title={`Excluir meta ${goal.goalName}`}
                            >
-                             <FaTrash />
+                             × {/* Substituído o ícone por 'X' */}
                            </button>
                         </li>
                     ))}
