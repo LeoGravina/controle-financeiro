@@ -1,14 +1,17 @@
-// NOVO ARQUIVO: src/components/GoalManager.jsx
+// COMPLETO: src/components/GoalManager.jsx
+// - Layout do formulário usa flex-direction column.
+// - Botão excluir usa '×' e classe 'delete-button'.
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, onSnapshot, addDoc, Timestamp, deleteDoc, doc } from 'firebase/firestore'; // Importações do Firestore
+import { collection, query, where, onSnapshot, addDoc, Timestamp, deleteDoc, doc } from 'firebase/firestore'; 
 import { db, auth } from '../firebase/config';
 import CurrencyInput from './CurrencyInput';
+// import { FaTrash } from 'react-icons/fa'; // Removido
 
 const GoalManager = () => {
-    const [goals, setGoals] = useState([]); // Metas do usuário
+    const [goals, setGoals] = useState([]); 
     const [loading, setLoading] = useState(true);
-    const [goalName, setGoalName] = useState(''); // Input Nome da Meta
-    const [targetAmount, setTargetAmount] = useState(''); // Input Valor Alvo
+    const [goalName, setGoalName] = useState(''); 
+    const [targetAmount, setTargetAmount] = useState(''); 
 
     const user = auth.currentUser;
 
@@ -28,7 +31,6 @@ const GoalManager = () => {
                 id: doc.id,
                 ...doc.data()
             }));
-            // Ordena as metas, talvez por data de criação ou nome
             fetchedGoals.sort((a, b) => a.goalName.localeCompare(b.goalName)); 
             setGoals(fetchedGoals);
             setLoading(false);
@@ -40,7 +42,7 @@ const GoalManager = () => {
         // Limpa o listener ao desmontar
         return () => unsubscribe();
 
-    }, [user]); // Depende do usuário logado
+    }, [user]); 
 
     // Função para adicionar uma nova meta
     const handleAddGoal = async (e) => {
@@ -54,13 +56,12 @@ const GoalManager = () => {
             userId: user.uid,
             goalName: goalName.trim(),
             targetAmount: parseFloat(targetAmount),
-            currentAmount: 0, // Começa com 0
+            currentAmount: 0, 
             createdAt: Timestamp.now()
         };
 
         try {
             await addDoc(collection(db, 'goals'), newGoal);
-            // Limpa o formulário após adicionar
             setGoalName('');
             setTargetAmount('');
         } catch (error) {
@@ -69,14 +70,14 @@ const GoalManager = () => {
         }
     };
     
-    // Função para deletar uma meta (adicionada para gerenciamento básico)
-    const handleDeleteGoal = async (goalId, goalName) => {
+    // Função para deletar uma meta
+    const handleDeleteGoal = async (e, goalId, goalName) => {
+        e.stopPropagation(); // Impede outros cliques
         if (!user || !window.confirm(`Tem certeza que deseja excluir a meta "${goalName}"? Todo o progresso será perdido.`)) {
             return;
         }
         try {
             await deleteDoc(doc(db, 'goals', goalId));
-            // A lista atualizará automaticamente devido ao onSnapshot
         } catch (error) {
             console.error("Erro ao excluir meta:", error);
             alert("Erro ao excluir a meta. Tente novamente.");
@@ -92,7 +93,7 @@ const GoalManager = () => {
     }
 
     return (
-        <div className="goal-manager"> {/* Classe para estilização */}
+        <div className="goal-manager"> 
             <h4>Criar Nova Meta</h4>
             <form onSubmit={handleAddGoal} className="goal-add-form">
                 <input
@@ -128,14 +129,14 @@ const GoalManager = () => {
                              <small className="goal-target-amount">
                                 Alvo: {goal.targetAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                              </small>
-                             {/* Futuramente adicionar barra de progresso aqui */}
                            </div>
                            <button 
-                                onClick={(e) => { e.stopPropagation(); handleDeleteGoal(goal.id, goal.goalName); }} 
-                                className="action-button delete-button goal-delete-button" 
+                                onClick={(e) => handleDeleteGoal(e, goal.id, goal.goalName)} 
+                                // Classe unificada 'delete-button'
+                                className="delete-button action-button goal-delete-button" 
                                 title={`Excluir meta ${goal.goalName}`}
                            >
-                             × {/* Substituído o ícone por 'X' */}
+                             × 
                            </button>
                         </li>
                     ))}

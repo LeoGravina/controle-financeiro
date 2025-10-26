@@ -1,3 +1,12 @@
+/*
+  Dashboard.jsx COMPLETO
+  - Inclui Abas: Transação, Fixos, Orçamentos, Metas.
+  - Inclui Exibição: BudgetProgressList e GoalProgressList.
+  - Inclui Busca de Dados: onSnapshot para all.
+  - Inclui Filtros: Cards clicáveis + Dropdowns (Descrição, Tipo, Multi-Categoria).
+  - Inclui Scroll: Ao clicar no card e ao mudar filtro.
+  - Inclui Gráficos clicáveis para ReportPage.
+*/
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -170,11 +179,29 @@ const Dashboard = () => {
         if (listElement) { listElement.scrollTop = 0; }
     }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
 
-    // Funções handle... (completas)
+    // Funções handle...
     const handleAddTransaction = async (transaction) => {
         if (!user) return; const { isInstallment, installments, ...rest } = transaction;
         const dataToAdd = { ...rest, userId: user.uid, date: Timestamp.fromDate(transaction.date), isPaid: transaction.isPaid || false };
-        try { /* ... (lógica de adicionar transação) ... */ } catch (error) { console.error("Erro Adicionar Transação:", error); }
+        try {
+            if (isInstallment && transaction.type === 'expense') {
+                if (installments > 1) {
+                    const installmentAmount = transaction.amount / installments;
+                    const batch = writeBatch(db);
+                    for (let i = 0; i < installments; i++) {
+                        const installmentDate = new Date(transaction.date); installmentDate.setMonth(installmentDate.getMonth() + i);
+                        if (installmentDate.getDate() !== transaction.date.getDate()) installmentDate.setDate(0);
+                        const newTransactionRef = doc(collection(db, 'transactions'));
+                        batch.set(newTransactionRef, { ...dataToAdd, amount: installmentAmount, description: `${transaction.description} (${i + 1}/${installments})`, date: Timestamp.fromDate(installmentDate) });
+                    }
+                    await batch.commit();
+                } else {
+                    await addDoc(collection(db, 'transactions'), { ...dataToAdd, description: `${transaction.description} (1/1)` });
+                }
+            } else {
+                await addDoc(collection(db, 'transactions'), dataToAdd);
+            }
+        } catch (error) { console.error("Erro Adicionar Transação:", error); }
     };
     const handleUpdateTransaction = async (updatedTransaction) => {
         if (!user || !updatedTransaction.id) return; try { const { id, ...dataToUpdate } = updatedTransaction; if (dataToUpdate.date instanceof Date) dataToUpdate.date = Timestamp.fromDate(dataToUpdate.date); await updateDoc(doc(db, 'transactions', id), dataToUpdate); setIsEditTransactionModalOpen(false); setEditingTransaction(null); } catch (error) { console.error("Erro Atualizar Transação:", error); }
@@ -218,17 +245,30 @@ const Dashboard = () => {
     // --- LÓGICA PRINCIPAL E CÁLCULOS ---
     const allTransactionsForMonth = useMemo(() => {
         let monthTransactions = transactions.filter(t => new Date(t.date).getMonth() === currentMonth.getMonth() && new Date(t.date).getFullYear() === currentMonth.getFullYear());
-        fixedExpenses.forEach(fixed => { /* ... (adiciona fixos pendentes) ... */ }); return monthTransactions;
+        fixedExpenses.forEach(fixed => {
+            const paidVersionExists = monthTransactions.some(t => !t.isFixed && t.isPaid && t.description.toLowerCase().includes(fixed.description.toLowerCase()) && new Date(t.date).getDate() === fixed.dayOfMonth);
+            if (!paidVersionExists) {
+                monthTransactions.push({
+                    id: `fixed-${fixed.id}-${currentMonth.getFullYear()}-${currentMonth.getMonth()}`, description: fixed.description, amount: fixed.amount,
+                    date: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), fixed.dayOfMonth), type: 'expense', category: fixed.category, isPaid: false, isFixed: true,
+                });
+            }
+        });
+        return monthTransactions;
     }, [transactions, fixedExpenses, currentMonth]);
+
     const { incomeTotal, expensePaid, expenseToPay, balance } = useMemo(() => {
         let income = 0, paidExpense = 0, toPayExpense = 0; allTransactionsForMonth.forEach(t => { (t.type === 'income') ? income += t.amount : (t.isPaid ? paidExpense += t.amount : toPayExpense += t.amount); }); return { incomeTotal: income, expensePaid: paidExpense, expenseToPay: toPayExpense, balance: income - paidExpense };
     }, [allTransactionsForMonth]);
+
     const expenseChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'expense', categories), [allTransactionsForMonth, categories]);
     const incomeChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'income', categories), [allTransactionsForMonth, categories]);
     const categoryFilterOptions = useMemo(() => [ ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label)) ], [categories]);
+    
     const transactionsForDisplay = useMemo(() => {
         let baseList; if (transactionViewTab === 'fixed') { baseList = allTransactionsForMonth.filter(t => t.isFixed); } else { baseList = allTransactionsForMonth.filter(t => !t.isFixed || (t.isFixed && t.isPaid)); } let filteredByType = baseList; switch (typeFilter.value) { case 'income': filteredByType = baseList.filter(t => t.type === 'income'); break; case 'paidExpense': filteredByType = baseList.filter(t => t.type === 'expense' && t.isPaid); break; case 'toPayExpense': filteredByType = baseList.filter(t => t.type === 'expense' && !t.isPaid); break; default: break; } const descLower = descriptionFilter.toLowerCase(); const selectedCategoryNames = categoryFilter ? categoryFilter.map(opt => opt.value.toLowerCase()) : []; return filteredByType.filter(t => { const descriptionMatch = t.description?.toLowerCase().includes(descLower) ?? true; const categoryMatch = selectedCategoryNames.length === 0 || selectedCategoryNames.includes(t.category?.toLowerCase()); return descriptionMatch && categoryMatch; });
     }, [typeFilter, transactionViewTab, allTransactionsForMonth, descriptionFilter, categoryFilter, categories]); 
+    
     const expensesByCategory = useMemo(() => {
         const monthlyExpenses = allTransactionsForMonth.filter(t => t.type === 'expense'); return monthlyExpenses.reduce((acc, transaction) => { const categoryName = transaction.category || 'Outros'; acc[categoryName] = (acc[categoryName] || 0) + transaction.amount; return acc; }, {});
     }, [allTransactionsForMonth]); 
@@ -276,7 +316,7 @@ const Dashboard = () => {
 
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
                             <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
-                            <GoalProgressList goals={goals} /> {/* Renderiza Progresso das Metas */}
+                            <GoalProgressList goals={goals} />
                         
                         </div> {/* Fim da Sidebar */}
 

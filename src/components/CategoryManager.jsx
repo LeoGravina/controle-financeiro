@@ -1,6 +1,7 @@
 // COMPLETO: src/components/CategoryManager.jsx
+// - Alterado ícone FaTimes para '×'
 import React, { useState } from 'react';
-import { FaTimes } from 'react-icons/fa'; // Importa o 'X'
+// import { FaTimes } from 'react-icons/fa'; // Não mais necessário
 
 const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory, onEditCategory }) => {
   const [name, setName] = useState('');
@@ -28,7 +29,6 @@ const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory, onE
       </form>
       <ul className="category-list">
         {categories.length > 0 ? (
-          // Ordena as categorias alfabeticamente para exibição
           [...categories].sort((a, b) => a.name.localeCompare(b.name)).map(cat => (
             <li key={cat.id} onClick={() => onEditCategory(cat)} title={`Editar ${cat.name}`}>
               <div className="category-name-wrapper">
@@ -36,7 +36,7 @@ const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory, onE
                 {cat.name}
               </div>
               <button className="delete-button action-button" onClick={(e) => handleDeleteClick(e, cat.id)} title={`Excluir ${cat.name}`}>
-                <FaTimes /> {/* Ícone 'X' */}
+                × {/* Alterado de <FaTimes /> para '×' */}
               </button>
             </li>
           ))
