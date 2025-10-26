@@ -1,21 +1,23 @@
 // ATUALIZADO: src/pages/ReportPage.jsx
-// - Removido <Legend /> do PieChart.
-// - Alterado BarChart para layout="horizontal".
-// - Ajustadas props do BarChart (XAxis, YAxis, Bar, Margins).
+// - Select de Categoria: Adicionado hideSelectedOptions={false} e 
+//   controlShouldRenderValue={false}.
+// - Filtro multi-categoria implementado.
+// - BarChart REVERTIDO para layout="horizontal".
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
+import Select from 'react-select'; 
 import { 
-    PieChart, Pie, Cell, ResponsiveContainer, Tooltip, /* Legend removido */
+    PieChart, Pie, Cell, ResponsiveContainer, Tooltip, 
     BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 import { FaArrowLeft } from 'react-icons/fa';
 
 import TransactionList from '../components/TransactionList';
 
-// Tooltip Personalizado (Igual ao Dashboard)
+// Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0];
@@ -35,7 +37,7 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
-// Função para gerar dados (Igual ao Dashboard)
+// Função para gerar dados
 const generateChartData = (transactions, type, categories) => {
     const filtered = transactions.filter(t => t.type === type);
     const total = filtered.reduce((acc, t) => acc + t.amount, 0);
@@ -58,6 +60,7 @@ const ReportPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
+    // Estados
     const [user, setUser] = useState(null);
     const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -65,7 +68,10 @@ const ReportPage = () => {
     const [loading, setLoading] = useState(true);
     const [reportType, setReportType] = useState(null);
     const [reportMonth, setReportMonth] = useState(null);
+    const [reportDescriptionFilter, setReportDescriptionFilter] = useState('');
+    const [reportCategoryFilter, setReportCategoryFilter] = useState(null); // Pode ser array
 
+    // Efeitos
     useEffect(() => { window.scrollTo(0, 0); }, []); 
     useEffect(() => {
         if (location.state && location.state.reportType && location.state.reportMonth) {
@@ -97,6 +103,15 @@ const ReportPage = () => {
         return () => { listenersActive = false; unsubCategories(); unsubTransactions(); unsubFixedExpenses(); };
     }, [user]);
 
+     // useEffect para rolar a lista do relatório para o topo ao mudar filtros (sem a ref, busca pelo seletor)
+     useEffect(() => {
+        const listElement = document.querySelector('.report-inner-list-container ul'); // Busca ul dentro da classe específica
+        if (listElement) {
+            listElement.scrollTop = 0;
+        }
+    }, [reportDescriptionFilter, reportCategoryFilter]); // Roda quando filtros do relatório mudam
+
+    // Cálculos
     const allTransactionsForMonth = useMemo(() => {
         if (!reportMonth) return [];
         const month = reportMonth.getMonth();
@@ -119,14 +134,27 @@ const ReportPage = () => {
         });
         return monthTransactions;
     }, [transactions, fixedExpenses, reportMonth]);
+
+    const reportCategoryFilterOptions = useMemo(() => [ 
+        ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label))
+    ], [categories]);
+
     const filteredTransactions = useMemo(() => {
         if (!reportType) return [];
-        return allTransactionsForMonth.filter(t => t.type === reportType);
-    }, [allTransactionsForMonth, reportType]);
+        let baseList = allTransactionsForMonth.filter(t => t.type === reportType);
+        const descLower = reportDescriptionFilter.toLowerCase();
+        const selectedCategoryNames = reportCategoryFilter ? reportCategoryFilter.map(opt => opt.value.toLowerCase()) : [];
+        return baseList.filter(t => {
+             const descriptionMatch = t.description?.toLowerCase().includes(descLower) ?? true;
+             const categoryMatch = selectedCategoryNames.length === 0 || selectedCategoryNames.includes(t.category?.toLowerCase());
+             return descriptionMatch && categoryMatch;
+        });
+    }, [allTransactionsForMonth, reportType, reportDescriptionFilter, reportCategoryFilter]); 
+
     const chartData = useMemo(() => {
         if (!reportType || !filteredTransactions.length) return [];
         return generateChartData(filteredTransactions, reportType, categories);
-    }, [filteredTransactions, reportType, categories]);
+    }, [filteredTransactions, reportType, categories]); 
 
     const handleBack = () => navigate('/');
 
@@ -136,7 +164,7 @@ const ReportPage = () => {
 
     const monthName = reportMonth.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
     const title = reportType === 'income' ? 'Relatório de Ganhos' : 'Relatório de Gastos';
-    const totalValue = chartData.reduce((acc, item) => acc + item.value, 0);
+    const totalValue = filteredTransactions.reduce((acc, item) => acc + item.amount, 0); 
 
     return (
         <div className="dashboard-container report-container">
@@ -149,7 +177,7 @@ const ReportPage = () => {
                     <h2>{monthName}</h2>
                 </div>
                 <div className={`report-total ${reportType}`}>
-                    <span>Total {reportType === 'income' ? 'Recebido' : 'Gasto'}</span>
+                    <span>Total {reportType === 'income' ? 'Recebido' : 'Gasto'} (Filtrado)</span>
                     <strong className={reportType}>
                         {totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </strong>
@@ -166,7 +194,6 @@ const ReportPage = () => {
                                     {chartData.map((entry) => <Cell key={`cell-pie-${entry.name}`} fill={entry.color} />)}
                                 </Pie>
                                 <Tooltip content={<CustomTooltip />} />
-                                {/* Legend REMOVIDA */}
                             </PieChart>
                         </ResponsiveContainer>
                     ) : <p className="empty-message">Sem dados para exibir.</p>}
@@ -178,8 +205,8 @@ const ReportPage = () => {
                         <ResponsiveContainer width="100%" height={350}>
                             <BarChart 
                                 data={chartData} 
-                                layout="horizontal" // ALTERADO
-                                margin={{ top: 5, right: 30, left: 10, bottom: 50 }} // Margem inferior maior
+                                layout="horizontal" // REVERTIDO
+                                margin={{ top: 5, right: 30, left: 10, bottom: 50 }} 
                             >
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis 
@@ -187,9 +214,9 @@ const ReportPage = () => {
                                     type="category" 
                                     tick={{ fontSize: 11 }} 
                                     interval={0} 
-                                    angle={-45} // Ângulo maior para evitar sobreposição
+                                    angle={-45} 
                                     textAnchor="end" 
-                                    height={60} // Mais espaço para labels
+                                    height={60} 
                                 />
                                 <YAxis 
                                     type="number" 
@@ -210,8 +237,33 @@ const ReportPage = () => {
             </div>
 
             <div className="report-list-container card-style">
-                <h3>Transações Detalhadas ({filteredTransactions.length})</h3>
-                <div className="list-container">
+                <div className="list-container-header report-list-header"> 
+                    <h3>Transações Detalhadas ({filteredTransactions.length})</h3>
+                    <div className="transaction-list-filters">
+                        <input
+                            type="text"
+                            placeholder="🔍 Filtrar por descrição..."
+                            value={reportDescriptionFilter}
+                            onChange={(e) => setReportDescriptionFilter(e.target.value)}
+                            className="filter-input description-filter"
+                        />
+                         <Select
+                            options={reportCategoryFilterOptions}
+                            value={reportCategoryFilter}
+                            onChange={setReportCategoryFilter}
+                            placeholder="Categoria(s)..."
+                            isClearable={true} 
+                            isMulti 
+                            closeMenuOnSelect={false} 
+                            hideSelectedOptions={false} 
+                            controlShouldRenderValue={false} 
+                            className="filter-input category-filter" 
+                            classNamePrefix="react-select"
+                        />
+                    </div>
+                </div>
+
+                <div className="list-container report-inner-list-container"> 
                     <TransactionList
                         transactions={filteredTransactions.sort((a,b) => b.amount - a.amount)} 
                         categories={categories}

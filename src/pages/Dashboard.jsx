@@ -1,3 +1,12 @@
+/*
+  Dashboard.jsx COMPLETO E FINAL
+  - Select de Categoria: Adicionado hideSelectedOptions={false} e 
+    controlShouldRenderValue={false} para não mostrar selecionados na caixa principal.
+  - Filtro multi-categoria implementado.
+  - Cards clicáveis com scroll suave.
+  - Dropdown de filtro de tipo na lista.
+  - Scroll automático da lista ao filtrar.
+*/
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -7,6 +16,7 @@ import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp
 import { auth, db } from '../firebase/config';
 import Select from 'react-select';
 
+// Importando todos os componentes (SEM extensões)
 import SummaryCard from '../components/SummaryCard';
 import MonthNavigator from '../components/MonthNavigator';
 import CategoryManager from '../components/CategoryManager';
@@ -18,6 +28,7 @@ import EditCategoryModal from '../components/EditCategoryModal';
 import FixedExpensesManager from '../components/FixedExpensesManager';
 import EditFixedExpenseModal from '../components/EditFixedExpenseModal';
 
+// Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0];
@@ -35,6 +46,7 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
+// Função para gerar dados do gráfico
 const generateChartData = (transactions, type, categories) => {
     const filtered = transactions.filter(t => t.type === type);
     const total = filtered.reduce((acc, t) => acc + t.amount, 0);
@@ -50,6 +62,7 @@ const generateChartData = (transactions, type, categories) => {
     });
 };
 
+// Opções para o filtro de tipo
 const typeFilterOptions = [
     { value: 'all', label: 'Tipo (Todos)' },
     { value: 'income', label: 'Ganhos' },
@@ -68,7 +81,7 @@ const Dashboard = () => {
     const [transactionViewTab, setTransactionViewTab] = useState('monthly');
     const [sidebarTab, setSidebarTab] = useState('transaction');
     const [descriptionFilter, setDescriptionFilter] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState(null);
+    const [categoryFilter, setCategoryFilter] = useState(null); // Pode ser array
     const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]);
     const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, id: null, type: null });
     const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
@@ -80,11 +93,13 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const transactionListRef = useRef(null);
 
+    // Efeito de Autenticação
     useEffect(() => {
         const unsubAuth = onAuthStateChanged(auth, currentUser => setUser(currentUser || null));
         return () => unsubAuth();
     }, []);
 
+    // Efeito para buscar todos os dados do Firestore
     useEffect(() => {
         if (!user) {
             setTransactions([]); setCategories([]); setFixedExpenses([]); setLoading(false); return;
@@ -102,13 +117,15 @@ const Dashboard = () => {
         return () => { listenersActive = false; unsubCategories(); unsubTransactions(); unsubFixedExpenses(); };
     }, [user]);
 
+    // useEffect para rolar a lista para o topo ao mudar filtros
     useEffect(() => {
         const listElement = transactionListRef.current?.querySelector('ul');
         if (listElement) {
-            listElement.scrollTop = 0; 
+            listElement.scrollTop = 0;
         }
-    }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]); 
+    }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
 
+    // Funções handle...
     const handleAddTransaction = async (transaction) => {
         if (!user) return;
         const { isInstallment, installments, ...rest } = transaction;
@@ -249,6 +266,7 @@ const Dashboard = () => {
         });
     };
 
+    // --- LÓGICA PRINCIPAL E CÁLCULOS ---
     const allTransactionsForMonth = useMemo(() => {
         let monthTransactions = transactions.filter(t => new Date(t.date).getMonth() === currentMonth.getMonth() && new Date(t.date).getFullYear() === currentMonth.getFullYear());
         fixedExpenses.forEach(fixed => {
@@ -272,11 +290,11 @@ const Dashboard = () => {
     const expenseChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'expense', categories), [allTransactionsForMonth, categories]);
     const incomeChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'income', categories), [allTransactionsForMonth, categories]);
 
-    const categoryFilterOptions = useMemo(() => [
-        { value: '', label: 'Categoria (Todas)' },
+    const categoryFilterOptions = useMemo(() => [ 
         ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label))
     ], [categories]);
 
+    // Transações para exibição (com filtro multi-categoria)
     const transactionsForDisplay = useMemo(() => {
         let baseList;
         if (transactionViewTab === 'fixed') {
@@ -294,12 +312,13 @@ const Dashboard = () => {
         }
         
         const descLower = descriptionFilter.toLowerCase();
-        const catFilterValue = categoryFilter ? categoryFilter.value.toLowerCase() : '';
+        const selectedCategoryNames = categoryFilter ? categoryFilter.map(opt => opt.value.toLowerCase()) : [];
         
-        return filteredByType.filter(t =>
-            (t.description?.toLowerCase().includes(descLower) ?? true) &&
-            (catFilterValue === '' || (t.category?.toLowerCase() === catFilterValue))
-        );
+        return filteredByType.filter(t => {
+            const descriptionMatch = t.description?.toLowerCase().includes(descLower) ?? true;
+            const categoryMatch = selectedCategoryNames.length === 0 || selectedCategoryNames.includes(t.category?.toLowerCase());
+            return descriptionMatch && categoryMatch;
+        });
     }, [typeFilter, transactionViewTab, allTransactionsForMonth, descriptionFilter, categoryFilter, categories]); 
 
     if (loading) return <div>Carregando...</div>;
@@ -356,7 +375,7 @@ const Dashboard = () => {
                                     {incomeChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
                                             <PieChart>
-                                                <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>
+                                                <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                                                     {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
                                                 <Tooltip content={<CustomTooltip />} />
@@ -374,7 +393,7 @@ const Dashboard = () => {
                                     {expenseChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
                                             <PieChart>
-                                                <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>
+                                                <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                                                     {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
                                                 <Tooltip content={<CustomTooltip />} />
@@ -411,8 +430,12 @@ const Dashboard = () => {
                                             options={categoryFilterOptions}
                                             value={categoryFilter}
                                             onChange={setCategoryFilter}
-                                            placeholder="Categoria..."
-                                            isClearable={true}
+                                            placeholder="Categoria(s)..." 
+                                            isClearable={true} 
+                                            isMulti 
+                                            closeMenuOnSelect={false} 
+                                            hideSelectedOptions={false} 
+                                            controlShouldRenderValue={false} 
                                             className="filter-input category-filter"
                                             classNamePrefix="react-select"
                                         />

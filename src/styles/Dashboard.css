@@ -1,7 +1,8 @@
 /* === IMPORTAÇÕES E VARIÁVEIS GLOBAIS === */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 :root {
-  /* Cores Principais */
+  /* ... (variáveis inalteradas) ... */
+   /* Cores Principais */
   --primary-color: #6a82fb; --primary-hover: #5c6bc0; --primary-light: #eef2ff;
   /* Cores Semânticas */
   --income-color: #27ae60; --income-bg-light: #e8f8f5; --expense-color: #e74c3c;
@@ -28,30 +29,24 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-c
 .sidebar { display: flex; flex-direction: column; }
 .content { display: flex; flex-direction: column; }
 
-/* === CABEÇALHO === */
+/* ... (Estilos do Cabeçalho, Navegador, Cards de Resumo inalterados) ... */
 header { margin-bottom: 35px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 25px; }
 header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weight: 700; letter-spacing: -1px; }
 .header-controls { display: flex; align-items: center; gap: 20px; }
 .signout-button { background-color: var(--expense-color); color: white; border: none; padding: 10px 20px; border-radius: var(--border-radius-md); cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all var(--transition-std); box-shadow: var(--shadow-sm); }
 .signout-button:hover { background-color: #c0392b; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3); }
-
-/* === NAVEGADOR DE MÊS === */
 .month-navigator { display: flex; justify-content: center; align-items: center; gap: 15px; background-color: var(--card-bg-color); padding: 10px 20px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm); }
 .month-navigator h2 { margin: 0; color: var(--text-color); text-transform: capitalize; font-size: 1.3rem; font-weight: 600; width: 220px; text-align: center; white-space: nowrap; }
 .month-navigator button { background: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: var(--border-radius-md); cursor: pointer; font-weight: 500; font-size: 1rem; transition: all var(--transition-std); }
 .month-navigator button:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 3px 6px rgba(106, 130, 251, 0.3); }
-
-/* === CARDS DE RESUMO === */
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 40px; }
-.summary-card { background: var(--card-bg-color); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); transition: all var(--transition-std); border-left: 6px solid; position: relative; /* overflow: hidden; foi removido */ }
-/* Estilos de filtro dos cards */
+.summary-card { background: var(--card-bg-color); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); transition: all var(--transition-std); border-left: 6px solid; position: relative; }
 .summary-card.clickable { cursor: pointer; } 
 .summary-card[data-type="balance"] { cursor: default; }
 .summary-card.clickable:not(.active):hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
 .summary-card.active { transform: translateY(-5px) scale(1.02); box-shadow: 0 12px 25px rgba(106, 130, 251, 0.2); border-left-width: 8px; }
 .summary-card.active[data-type="income"] { border-left-color: var(--income-color); }
 .summary-card.active[data-type="expense"] { border-left-color: var(--expense-color); }
-/* Fim dos estilos re-adicionados */
 .summary-card[data-type="income"] { border-left-color: var(--income-color); }
 .summary-card[data-type="expense"] { border-left-color: var(--expense-color); }
 .summary-card[data-type="balance"] { border-left-color: var(--primary-color); } .summary-card[data-type="balance"].negative { border-left-color: var(--expense-color); }
@@ -60,7 +55,8 @@ header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weig
 .summary-card[data-type="income"] span { color: var(--income-color); } .summary-card[data-type="expense"] span { color: var(--expense-color); }
 .summary-card[data-type="balance"] span { color: var(--primary-color); } .summary-card[data-type="balance"].negative span { color: var(--expense-color); }
 
-/* === CONTAINERS GENÉRICOS === */
+
+/* ... (Estilos Containers, Formulários, Select, Toggle, Abas, Gerenciadores inalterados) ... */
 .form-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager {
   background: var(--card-bg-color); padding: 30px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md);
 }
@@ -73,8 +69,6 @@ h3 { margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom
   margin-bottom: 20px; padding-bottom: 10px; font-size: 1.2rem;
   border-bottom: none; padding-bottom: 0; margin-bottom: 0;
 }
-
-/* === FORMULÁRIOS E INPUTS === */
 .form-container form, .category-form, .fixed-expense-form { display: flex; flex-direction: column; gap: 16px; }
 input[type="text"], input[type="date"], input[type="number"], .currency-input {
   padding: 12px 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); font-size: 0.95rem;
@@ -98,7 +92,6 @@ input:focus, .currency-input:focus,
 .installment-input-wrapper { display: flex; align-items: center; gap: 5px; color: var(--text-light-color); }
 .installment-section input[type="number"] { width: 60px; padding: 8px; font-size: 0.95rem; text-align: center; background-color: #ffffff; -moz-appearance: textfield; border-radius: var(--border-radius-sm); }
 .installment-section input[type="number"]::-webkit-outer-spin-button, .installment-section input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-
 .form-container-header {
   display: flex;
   justify-content: space-between;
@@ -136,14 +129,10 @@ input:focus, .currency-input:focus,
   flex-grow: 1; 
   background-color: transparent; 
 }
-
 .form-date-picker input[type="date"]:focus {
     outline: none;
     box-shadow: none;
 }
-
-
-/* === ESTILOS PARA REACT-SELECT (Formulário e Filtros) === */
 .react-select-container .react-select__control { min-height: 46px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background-color: var(--input-bg-color); box-shadow: none; transition: all var(--transition-std); font-size: 0.95rem; }
 .react-select-container .react-select__control--is-focused { border-color: var(--primary-color); box-shadow: none; background-color: #ffffff; }
 .react-select-container .react-select__placeholder { color: #adb5bd; }
@@ -153,8 +142,6 @@ input:focus, .currency-input:focus,
 .react-select-container .react-select__option { padding: 10px 16px; font-size: 0.95rem; }
 .react-select-container .react-select__option--is-focused { background-color: var(--primary-light); }
 .react-select-container .react-select__option--is-selected { background-color: var(--primary-color); color: white; }
-
-/* === BOTÕES DE TOGGLE GANHO/GASTO === */
 .type-toggle-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
 .type-toggle-button { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 15px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background-color: var(--card-bg-color); color: var(--text-light-color); font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all var(--transition-std); }
 .type-toggle-button svg { font-size: 1em; margin-bottom: -2px; }
@@ -162,8 +149,6 @@ input:focus, .currency-input:focus,
 .type-toggle-button.income.active { background-color: var(--income-bg-light); border-color: var(--income-color); color: var(--income-color); }
 .type-toggle-button.expense.active { background-color: var(--expense-bg-light); border-color: var(--expense-color); color: var(--expense-color); }
 .type-toggle-button:not(.active):hover { border-color: #adb5bd; background-color: #f8f9fa; color: var(--text-color); }
-
-/* === ABAS (Sidebar e Lista) - ESTILO UNIFICADO E CORRIGIDO === */
 .sidebar-tabs, .transaction-view-tabs { display: flex; gap: 0; margin-bottom: 0; position: relative; z-index: 1; border-bottom: 1px solid var(--border-color); }
 .sidebar-tab-button, .tab-button {
   flex: 1; padding: 12px 15px; border: 1px solid transparent; border-bottom: none; background-color: transparent; color: var(--text-light-color);
@@ -176,21 +161,17 @@ input:focus, .currency-input:focus,
   border-color: var(--border-color); border-bottom-color: var(--card-bg-color); z-index: 2; box-shadow: none;
 }
 .sidebar-tab-button:not(.active):hover, .tab-button:not(.active):hover { background-color: #e9ecef; color: var(--text-color); }
-/* Conexão Visual Sidebar */
 .sidebar-content-container { border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); margin-top: -1px; box-shadow: var(--shadow-md); padding: 0; background-color: var(--card-bg-color); }
 .sidebar-tabs button.active:first-child + .sidebar-content-container { border-top-left-radius: 0; }
 .sidebar-tabs button.active:last-child + .sidebar-content-container { border-top-right-radius: 0; }
 .sidebar-tabs button:not(.active):first-child + .sidebar-content-container { border-top-left-radius: var(--border-radius-lg); }
 .sidebar-tabs button:not(.active):last-child + .sidebar-content-container { border-top-right-radius: var(--border-radius-lg); }
 .sidebar-content-container .form-container, .sidebar-content-container .fixed-expenses-manager { box-shadow: none; border-radius: 0; border: none; padding-top: 25px; padding-bottom: 25px; height: 100%; }
-/* Conexão Visual Lista */
 .transaction-view-tabs + .list-container { border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px; }
 .transaction-view-tabs button.active:first-child + .list-container { border-top-left-radius: 0; }
 .transaction-view-tabs button.active:last-child + .list-container { border-top-right-radius: 0; }
 .transaction-view-tabs button:not(.active):first-child + .list-container { border-top-left-radius: var(--border-radius-lg); }
 .transaction-view-tabs button:not(.active):last-child + .list-container { border-top-right-radius: var(--border-radius-lg); }
-
-/* === GERENCIADORES (CATEGORIA E GASTOS FIXOS) === */
 .category-manager { margin-top: 30px; } 
 .fixed-expenses-manager { }
 .category-manager h3, .fixed-expenses-manager h3 { }
@@ -216,6 +197,7 @@ input:focus, .currency-input:focus,
 .category-list .delete-button, .fixed-expense-list .delete-button { margin-left: auto; font-size: 1.5rem; font-weight: bold; }
 .action-button:hover, .delete-button:hover { background-color: var(--expense-bg-light); color: var(--expense-color); }
 
+
 /* === FILTROS DA LISTA DE TRANSAÇÕES (Dentro do Card) === */
 .list-container-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -225,20 +207,19 @@ input:focus, .currency-input:focus,
 }
 .list-container-header h3 { margin: 0; border: none; padding: 0; font-size: 1.3rem; }
 .transaction-list-filters { display: flex; gap: 15px; flex-grow: 1; justify-content: flex-end; }
-.filter-input { flex-grow: 1; min-width: 150px; /* Ajuste ou remova conforme necessário */ } 
+.filter-input { flex-grow: 1; min-width: 150px; } 
 .filter-input.description-filter {
   padding: 10px 14px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color);
   font-size: 0.9rem; background-color: white; height: 42px; 
 }
 .filter-input.category-filter .react-select__control { min-height: 42px; height: 42px; font-size: 0.9rem; background-color: white; }
 .filter-input.category-filter .react-select__placeholder { color: #adb5bd; }
-/* Estilo para o novo type-filter */
 .filter-input.type-filter .react-select__control { min-height: 42px; height: 42px; font-size: 0.9rem; background-color: white; }
 .filter-input.type-filter .react-select__placeholder { color: #adb5bd; }
 
-
 /* === LISTA DE TRANSAÇÕES === */
-.list-container ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; max-height: 600px; }
+/* 1. REMOVIDO: max-height e overflow-y da regra geral ul */
+.list-container ul { list-style: none; padding: 0; margin: 0; /* overflow-y: auto; */ flex-grow: 1; /* max-height: 600px; */ }
 .list-container li { display: flex; align-items: center; gap: 10px; padding: 15px; border-bottom: 1px solid var(--border-color); background-color: #ffffff; transition: background-color var(--transition-fast); border-left: 5px solid transparent; }
 .list-container li:last-child { border-bottom: none; }
 .transaction-clickable-area { flex-grow: 1; display: flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -268,7 +249,7 @@ input:focus, .currency-input:focus,
 .delete-list-button:disabled { opacity: 0.1; cursor: not-allowed; } .delete-list-button:disabled:hover { background: none; color: var(--text-light-color); transform: none; }
 .transaction-details .fixed-expense-icon { color: var(--primary-color); margin-right: 6px; font-size: 0.8em; vertical-align: middle; }
 
-/* === GRÁFICOS === */
+/* ... (Estilos Gráficos, Tooltip, Modais inalterados) ... */
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; margin-bottom: 30px; }
 .chart-item {
   background: var(--card-bg-color);
@@ -282,96 +263,74 @@ input:focus, .currency-input:focus,
   transform: translateY(-5px); 
   box-shadow: var(--shadow-lg);
 }
-
-/* === NOVO TOOLTIP CUSTOMIZADO (Design LIMPO como o EXEMPLO) === */
 [data-tooltip] {
   position: relative;
-  /* Garante que o elemento seja a referência para o tooltip */
 }
-
 [data-tooltip]::before,
 [data-tooltip]::after {
-  content: attr(data-tooltip); /* Pega o texto do atributo */
+  content: attr(data-tooltip); 
   position: absolute;
   left: 50%;
-  
-  /* Escondido por padrão, aparece no hover */
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.2s ease, visibility 0.2s ease;
-  transition-delay: 0.1s; /* Pequeno atraso para uma aparição suave */
-  
-  z-index: 1010; /* Z-index alto para ficar acima de tudo */
-  pointer-events: none; /* Não interfere com cliques */
+  transition-delay: 0.1s; 
+  z-index: 1010; 
+  pointer-events: none; 
 }
-
-/* O corpo do tooltip */
 [data-tooltip]::before {
   top: auto; 
-  bottom: calc(100% + 10px); /* 10px acima do elemento */
-  transform: translateX(-50%); /* Centraliza horizontalmente */
-  background-color: #333; /* Cor de fundo */
-  color: #fff; /* Cor do texto */
-  padding: 8px 12px;
-  border-radius: 8px; /* Cantos arredondados */
-  font-size: 0.9em;
-  white-space: nowrap; /* Não quebra linha */
-  text-align: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Sombra suave */
-}
-
-/* A seta do tooltip */
-[data-tooltip]::after {
-  content: ''; /* Vazio, apenas para a forma */
-  bottom: calc(100% + 5px); /* Posiciona a base da seta 5px ACIMA do elemento */
-  border-width: 5px; /* Tamanho da seta */
-  border-style: solid;
-  /* CORREÇÃO AQUI: Cor na borda inferior para apontar para cima */
-  border-color: transparent transparent #333 transparent; 
-  /* CORREÇÃO AQUI: Centraliza a seta */
+  bottom: calc(100% + 10px); 
   transform: translateX(-50%); 
+  background-color: #333; 
+  color: #fff; 
+  padding: 8px 12px;
+  border-radius: 8px; 
+  font-size: 0.9em;
+  white-space: nowrap; 
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); 
 }
-
-/* Visibilidade no hover */
+[data-tooltip]::after {
+  content: ''; 
+  position: absolute; 
+  left: 50%; 
+  transform: translateX(-50%); 
+  bottom: calc(100% + 5px); 
+  border-width: 5px; 
+  border-style: solid;
+  border-color: transparent transparent #333 transparent; 
+}
 [data-tooltip]:hover::before,
 [data-tooltip]:hover::after {
   opacity: 1;
   visibility: visible;
 }
-
-/* === AJUSTE ESPECÍFICO PARA O CHECKBOX (LISTA DE TRANSAÇÕES) === */
 .paid-status-toggle[data-tooltip]::before {
   top: 50%; 
   bottom: auto; 
   left: 115%; 
   transform: translateY(-50%); 
 }
-
 .paid-status-toggle[data-tooltip]::after {
   top: 50%; 
   bottom: auto; 
   left: calc(115% - 5px); 
   border-color: transparent #333 transparent transparent; 
-  transform: translateY(-50%) rotate(0deg); 
+  transform: translateY(-50%); 
 }
-
 .chart-item h4 { margin-top: 0; margin-bottom: 20px; text-align: center; font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
 .charts-container .recharts-wrapper { font-size: 12px; }
 .empty-message { text-align: center; color: var(--text-light-color); padding: 20px 0; font-style: italic; }
-/* Tooltip do Gráfico (Interno) */
 .custom-tooltip { background-color: rgba(30, 41, 59, 0.95); padding: 12px 18px; border-radius: var(--border-radius-md); border: none; box-shadow: var(--shadow-lg); color: #f8f9fa; font-size: 0.9rem; line-height: 1.5; }
 .custom-tooltip .label { font-weight: 700; margin-bottom: 8px; font-size: 1rem; color: #ffffff; }
 .custom-tooltip .value { color: #ced4da; margin-bottom: 4px; }
 .custom-tooltip .percent { color: #f1c40f; font-weight: 600; margin-top: 8px; display: block; }
-
-/* === MODAIS === */
 .modal-overlay { position: fixed; inset: 0; background: rgba(30, 41, 59, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity var(--transition-std), visibility var(--transition-std); }
 .modal-overlay.open { opacity: 1; visibility: visible; }
 .modal-content { background: #ffffff; padding: 35px 40px; border-radius: var(--border-radius-lg); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); width: 100%; max-width: 450px; text-align: center; transform: scale(0.95) translateY(10px); opacity: 0; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease-in-out; }
 .modal-overlay.open .modal-content { transform: scale(1) translateY(0); opacity: 1; }
-.modal-content .react-select-container .react-select__menu {
-  z-index: 1001; 
-}
+.modal-content .react-select-container .react-select__menu { z-index: 1001; }
 .modal-content h4 { margin-top: 0; font-size: 1.6rem; color: var(--text-color); margin-bottom: 15px; font-weight: 700; }
 .modal-content p { font-size: 1.05rem; color: var(--text-light-color); margin-bottom: 30px; line-height: 1.7; }
 .modal-actions { display: flex; justify-content: center; gap: 15px; }
@@ -393,35 +352,9 @@ input:focus, .currency-input:focus,
 .modal-content .form-date-picker input[type="date"] { border: none; background: transparent; padding: 0; margin: 0; font-size: 0.9rem; font-family: 'Inter', sans-serif; color: var(--text-color); width: auto; }
 .modal-content .form-date-picker input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
 
-/* === RESPONSIVIDADE === */
-@media (max-width: 1200px) { .main-layout { grid-template-columns: 350px 1fr; } }
-@media (max-width: 992px) { .main-layout { grid-template-columns: 1fr; } .charts-grid { grid-template-columns: 1fr; } }
-@media (max-width: 768px) {
-    .dashboard-container { padding: 15px; margin: 15px auto; }
-    header { flex-direction: column; align-items: stretch; padding-bottom: 15px; margin-bottom: 25px; }
-    header h1 { font-size: 1.8rem; text-align: center; margin-bottom: 15px; }
-    .header-controls { justify-content: space-between; gap: 10px; }
-    .month-navigator { padding: 8px 10px; gap: 10px; } .month-navigator h2 { font-size: 1.1rem; width: auto; } .month-navigator button { padding: 6px 12px; font-size: 0.9rem;}
-    .signout-button { padding: 8px 15px; font-size: 0.85rem;}
-    .summary-grid { gap: 15px; margin-bottom: 30px;} .summary-card { padding: 20px; } .summary-card span { font-size: 1.8rem; }
-    .main-layout { gap: 25px; }
-    .form-container, .list-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager { padding: 20px; }
-    h3 { font-size: 1.2rem; padding-bottom: 10px; margin-bottom: 20px; }
-    input[type="text"], input[type="date"], input[type="number"], .currency-input { padding: 10px 14px; font-size: 0.9rem;}
-    .submit-button { padding: 12px; font-size: 0.95rem; }
-    .modal-content { padding: 25px; max-width: 90%; } .modal-content h4 { font-size: 1.4rem; } .modal-content p { font-size: 0.95rem; } .modal-button { padding: 10px 20px; font-size: 0.9rem;}
-    .category-form { flex-direction: column; align-items: stretch; }
-    .category-form input[type="text"], .category-form input[type="color"], .category-form .submit-button { width: 100%; height: 40px; }
-    .list-container-header { flex-direction: column; align-items: stretch; }
-    .transaction-list-filters { flex-direction: column; } .filter-input { min-width: 100%; }
-    .list-container li { padding: 12px; gap: 8px; } .transaction-amount { font-size: 0.9rem; }
-    .delete-list-button { width: 28px; height: 28px; font-size: 1rem; }
-    .sidebar-tabs, .transaction-view-tabs { padding: 4px; border-radius: 8px; }
-    .sidebar-tab-button, .tab-button { padding: 8px 10px; font-size: 0.85rem; }
-    .charts-grid { gap: 20px; } .chart-item h4 { font-size: 1rem; }
-}
 
-/* === INÍCIO: ESTILOS DA PÁGINA DE RELATÓRIO === */
+/* === INÍCIO: ESTILOS MELHORADOS DA PÁGINA DE RELATÓRIO === */
+/* Estilos melhorados para ReportPage integrados aqui */
 .card-style {
   background: var(--card-bg-color);
   padding: 30px;
@@ -433,82 +366,174 @@ input:focus, .currency-input:focus,
   justify-content: space-between;
   align-items: center;
   gap: 20px;
-  margin-bottom: 30px;
+  margin-bottom: 40px; 
   padding-bottom: 25px;
   border-bottom: 1px solid var(--border-color);
   flex-wrap: wrap; 
+}
+.report-header .signout-button { 
+  background-color: var(--input-bg-color); 
+  color: var(--text-light-color);
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition-std);
+}
+.report-header .signout-button:hover {
+  background-color: var(--border-color);
+  color: var(--text-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 .report-title {
   text-align: center;
   flex-grow: 1;
 }
 .report-title h1 {
-  font-size: 2.0rem;
-  margin: 0 0 5px 0;
+  font-size: 2.2rem; 
+  margin: 0 0 8px 0; 
   color: var(--primary-color); 
   font-weight: 700;
   letter-spacing: -1px; 
 }
 .report-title h2 {
-  font-size: 1.2rem;
+  font-size: 1.1rem; 
   margin: 0;
   color: var(--text-light-color);
-  font-weight: 500;
+  font-weight: 400; 
+  text-transform: capitalize;
 }
+/* 2. ATUALIZADO: Estilo do Total Recebido/Gasto */
 .report-total {
   background-color: var(--card-bg-color);
-  padding: 15px 25px;
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--shadow-sm);
-  text-align: right;
-  min-width: 200px; 
+  padding: 20px 30px; /* Aumenta padding vertical */
+  border-radius: var(--border-radius-lg); 
+  box-shadow: var(--shadow-md);
+  text-align: center; /* Centraliza */
+  min-width: 250px; /* Aumenta largura mínima */
+  border-left: none; /* Remove borda esquerda */
 }
 .report-total span {
   display: block;
   color: var(--text-light-color);
   font-size: 0.9rem;
-  margin-bottom: 5px;
+  margin-bottom: 8px; /* Mais espaço */
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .report-total strong {
-  font-size: 1.8rem;
+  font-size: 2.2rem; /* Maior */
   font-weight: 700;
+  letter-spacing: -0.5px;
 }
 .report-total strong.income { color: var(--income-color); }
 .report-total strong.expense { color: var(--expense-color); }
 .report-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1.5fr; 
   gap: 30px;
-  margin-bottom: 30px;
+  margin-bottom: 40px; 
+}
+.report-chart-item {
+  height: 100%; 
+  display: flex;
+  flex-direction: column;
 }
 .report-chart-item h3 {
   margin-top: 0;
   margin-bottom: 25px;
   text-align: center;
-  font-size: 1.3rem;
+  font-size: 1.2rem; 
   font-weight: 600;
+  color: var(--text-color);
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 15px;
 }
-.report-list-container h3 {
-  margin-top: 0;
-  margin-bottom: 20px;
-  font-size: 1.3rem;
-  font-weight: 600;
+.report-chart-item .recharts-responsive-container {
+  flex-grow: 1; 
 }
+.recharts-wrapper .recharts-yAxis.yAxis .recharts-cartesian-axis-tick-value {
+  font-size: 0.9rem; 
+  fill: var(--text-light-color); 
+}
+.recharts-wrapper .recharts-xAxis.xAxis .recharts-cartesian-axis-tick-value {
+  font-size: 0.85rem; 
+  fill: var(--text-light-color);
+}
+.report-list-container {
+  /* .card-style já aplicado */
+}
+/* 3. NOVO: Estilos para o header da lista no relatório (com filtros) */
+.report-list-container .list-container-header.report-list-header {
+  display: flex; /* Garante flexbox */
+  justify-content: space-between; /* Espaça título e filtros */
+  align-items: center; /* Alinha verticalmente */
+  flex-wrap: wrap; /* Permite quebra se não couber */
+  gap: 15px; /* Espaço entre título e filtros */
+  padding: 0 0 20px 0; /* Remove padding superior, mantém inferior */
+  margin-bottom: 15px; /* Espaço antes da lista */
+  border-bottom: 1px solid var(--border-color);
+}
+.report-list-container .list-container-header.report-list-header h3 {
+  margin: 0; /* Remove margem do h3 */
+  padding: 0; /* Remove padding do h3 */
+  border: none; /* Remove borda do h3 */
+  font-size: 1.4rem; 
+  font-weight: 600;
+  color: var(--primary-color);
+  flex-shrink: 0; /* Impede que o título encolha */
+}
+.report-list-container .transaction-list-filters {
+  justify-content: flex-end; /* Alinha filtros à direita */
+  flex-grow: 1; /* Permite que ocupem espaço */
+  gap: 10px; /* Espaço menor entre filtros */
+}
+/* Ajusta largura dos filtros no relatório */
+.report-list-container .filter-input {
+  min-width: 140px; /* Menor */
+  max-width: 200px; /* Define um máximo */
+}
+.report-list-container .filter-input.description-filter {
+  max-width: 250px; /* Descrição pode ser maior */
+}
+/* FIM NOVO */
+
+/* 4. ATUALIZADO: Correção Scroll Duplo */
+.report-inner-list-container { /* Classe adicionada no JSX */
+  max-height: 600px; 
+  overflow-y: auto;
+  flex-grow: 1; /* Ocupa espaço vertical */
+}
+.report-inner-list-container ul { /* Remove scroll/height do ul interno */
+  overflow-y: visible;
+  max-height: none;
+}
+/* FIM ATUALIZADO */
+
 .report-list-container .list-container {
   box-shadow: none;
   padding: 0;
-  border-top: 1px solid var(--border-color);
-  margin-top: -1px; 
-  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
-  max-height: 500px; 
-  overflow-y: auto;
+  border: none; 
+  margin-top: 0; 
+  border-radius: 0;
 }
-.recharts-wrapper .recharts-yAxis .recharts-cartesian-axis-tick-value {
-  font-size: 0.9rem; 
+.report-list-container .list-container ul {
+  padding-top: 10px;
 }
-
+.report-list-container .list-container li {
+  padding: 18px 15px;
+}
+.report-list-container .list-container .transaction-details span {
+  font-size: 0.95rem; 
+}
+.report-list-container .list-container .transaction-amount {
+  font-size: 1rem; 
+}
+.empty-message { 
+  text-align: center; 
+  color: var(--text-light-color); 
+  padding: 40px 0; 
+  font-style: italic; 
+  font-size: 1rem;
+}
 /* === Responsividade para Relatório === */
 @media (max-width: 992px) {
   .report-grid {
@@ -523,34 +548,95 @@ input:focus, .currency-input:focus,
   .report-total {
     text-align: center;
     padding: 20px;
+    margin-top: 10px; 
   }
   .report-title {
     order: -1; 
     margin-bottom: 15px;
   }
-  .report-title h1 { font-size: 1.6rem; }
+  .report-title h1 { font-size: 1.8rem; }
   .report-title h2 { font-size: 1.0rem; }
-  .report-total strong { font-size: 1.6rem; }
-
-  .card-style {
-    padding: 20px;
-  }
+  .report-total strong { font-size: 1.8rem; }
   .report-chart-item h3,
-  .report-list-container h3 {
-    font-size: 1.1rem;
+  .report-list-container .list-container-header.report-list-header h3 { /* Ajusta H3 dos filtros */
+    font-size: 1.2rem;
     margin-bottom: 15px;
+  }
+  /* Ajusta filtros em telas menores */
+  .report-list-container .list-container-header.report-list-header {
+      flex-direction: column;
+      align-items: stretch;
+  }
+  .report-list-container .transaction-list-filters {
+      flex-direction: column;
+      width: 100%;
+  }
+  .report-list-container .filter-input {
+      min-width: unset;
+      max-width: unset; /* Remove max-width em telas pequenas */
   }
 }
 /* === FIM: ESTILOS DA PÁGINA DE RELATÓRIO === */
 
+/* ... (Estilos Responsivos Gerais, Tooltip do Checkbox inalterados) ... */
+@media (max-width: 1200px) { .main-layout { grid-template-columns: 350px 1fr; } }
+@media (max-width: 992px) { .main-layout { grid-template-columns: 1fr; } .charts-grid { grid-template-columns: 1fr; } }
+@media (max-width: 768px) {
+    .dashboard-container { padding: 15px; margin: 15px auto; }
+    header { flex-direction: column; align-items: stretch; padding-bottom: 15px; margin-bottom: 25px; }
+    header h1 { font-size: 1.8rem; text-align: center; margin-bottom: 15px; }
+    .header-controls { justify-content: space-between; gap: 10px; }
+    .month-navigator { padding: 8px 10px; gap: 10px; } .month-navigator h2 { font-size: 1.1rem; width: auto; } .month-navigator button { padding: 6px 12px; font-size: 0.9rem;}
+    .signout-button { padding: 8px 15px; font-size: 0.85rem;}
+    .summary-grid { gap: 15px; margin-bottom: 30px;} .summary-card { padding: 20px; } .summary-card span { font-size: 1.8rem; }
+    .main-layout { gap: 25px; }
+    .form-container, .list-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager { padding: 20px; }
+    /* h3 { font-size: 1.2rem; padding-bottom: 10px; margin-bottom: 20px; } */ /* Comentado para não conflitar com report */
+    input[type="text"], input[type="date"], input[type="number"], .currency-input { padding: 10px 14px; font-size: 0.9rem;}
+    .submit-button { padding: 12px; font-size: 0.95rem; }
+    .modal-content { padding: 25px; max-width: 90%; } .modal-content h4 { font-size: 1.4rem; } .modal-content p { font-size: 0.95rem; } .modal-button { padding: 10px 20px; font-size: 0.9rem;}
+    .category-form { flex-direction: column; align-items: stretch; }
+    .category-form input[type="text"], .category-form input[type="color"], .category-form .submit-button { width: 100%; height: 40px; }
+    .list-container-header { flex-direction: column; align-items: stretch; }
+    .transaction-list-filters { flex-direction: column; } 
+    /* .filter-input { min-width: 100%; } */ /* Comentado para não conflitar com report */
+    .list-container li { padding: 12px; gap: 8px; } .transaction-amount { font-size: 0.9rem; }
+    .delete-list-button { width: 28px; height: 28px; font-size: 1rem; }
+    .sidebar-tabs, .transaction-view-tabs { padding: 4px; border-radius: 8px; }
+    .sidebar-tab-button, .tab-button { padding: 8px 10px; font-size: 0.85rem; }
+    .charts-grid { gap: 20px; } .chart-item h4 { font-size: 1rem; }
+}
 /* === INÍCIO: CORREÇÃO TOOLTIP CORTADO === */
-/* Esta regra muda a posição do tooltip APENAS no checkbox
-  para que ele apareça ao lado, e não seja cortado pelo 'overflow' da lista.
-*/
 .paid-status-toggle[data-tooltip]::before {
   bottom: 50%; top: auto; left: 120%; transform: translateY(50%);
 }
 .paid-status-toggle[data-tooltip]::after {
-  bottom: 50%; top: auto; left: calc(120% - 5px); transform: translateY(50%) rotate(135deg);
+  bottom: 50%; top: auto; left: calc(120% - 5px); 
+  border-color: transparent #333 transparent transparent; 
+  transform: translateY(50%); 
 }
 /* === FIM: CORREÇÃO TOOLTIP CORTADO === */
+
+/* === INÍCIO: CORREÇÃO SCROLL LISTA DASHBOARD === */
+
+/* Aplica limite de altura e scroll APENAS na lista UL
+   dentro do .list-container principal do Dashboard.
+   Exclui a lista dentro do .report-list-container usando :not(). */
+.content > .list-container:not(.report-list-container) ul {
+  max-height: 600px; /* Ou a altura que você preferir */
+  overflow-y: auto;
+}
+
+/* Garante que a regra específica para o report continue funcionando
+   e sobrescreva a regra acima se necessário (caso já não o faça) */
+.report-inner-list-container { 
+  max-height: 600px; 
+  overflow-y: auto;
+  flex-grow: 1; 
+}
+.report-inner-list-container ul { 
+  overflow-y: visible;
+  max-height: none;
+}
+
+/* === FIM: CORREÇÃO SCROLL LISTA DASHBOARD === */
