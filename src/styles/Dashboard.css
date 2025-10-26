@@ -1,8 +1,7 @@
 /* === IMPORTAÇÕES E VARIÁVEIS GLOBAIS === */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 :root {
-  /* ... (variáveis inalteradas) ... */
-   /* Cores Principais */
+  /* Cores Principais */
   --primary-color: #6a82fb; --primary-hover: #5c6bc0; --primary-light: #eef2ff;
   /* Cores Semânticas */
   --income-color: #27ae60; --income-bg-light: #e8f8f5; --expense-color: #e74c3c;
@@ -29,16 +28,20 @@ body { margin: 0; font-family: 'Inter', sans-serif; background-color: var(--bg-c
 .sidebar { display: flex; flex-direction: column; }
 .content { display: flex; flex-direction: column; }
 
-/* ... (Estilos do Cabeçalho, Navegador, Cards de Resumo inalterados) ... */
+/* === CABEÇALHO === */
 header { margin-bottom: 35px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 25px; }
 header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weight: 700; letter-spacing: -1px; }
 .header-controls { display: flex; align-items: center; gap: 20px; }
 .signout-button { background-color: var(--expense-color); color: white; border: none; padding: 10px 20px; border-radius: var(--border-radius-md); cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: all var(--transition-std); box-shadow: var(--shadow-sm); }
 .signout-button:hover { background-color: #c0392b; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3); }
+
+/* === NAVEGADOR DE MÊS === */
 .month-navigator { display: flex; justify-content: center; align-items: center; gap: 15px; background-color: var(--card-bg-color); padding: 10px 20px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm); }
 .month-navigator h2 { margin: 0; color: var(--text-color); text-transform: capitalize; font-size: 1.3rem; font-weight: 600; width: 220px; text-align: center; white-space: nowrap; }
 .month-navigator button { background: var(--primary-color); color: white; border: none; padding: 8px 16px; border-radius: var(--border-radius-md); cursor: pointer; font-weight: 500; font-size: 1rem; transition: all var(--transition-std); }
 .month-navigator button:hover { background-color: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 3px 6px rgba(106, 130, 251, 0.3); }
+
+/* === CARDS DE RESUMO === */
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 40px; }
 .summary-card { background: var(--card-bg-color); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); transition: all var(--transition-std); border-left: 6px solid; position: relative; }
 .summary-card.clickable { cursor: pointer; } 
@@ -55,8 +58,7 @@ header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weig
 .summary-card[data-type="income"] span { color: var(--income-color); } .summary-card[data-type="expense"] span { color: var(--expense-color); }
 .summary-card[data-type="balance"] span { color: var(--primary-color); } .summary-card[data-type="balance"].negative span { color: var(--expense-color); }
 
-
-/* ... (Estilos Containers, Formulários, Select, Toggle, Abas, Gerenciadores inalterados) ... */
+/* === CONTAINERS GENÉRICOS === */
 .form-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager {
   background: var(--card-bg-color); padding: 30px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md);
 }
@@ -69,6 +71,8 @@ h3 { margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom
   margin-bottom: 20px; padding-bottom: 10px; font-size: 1.2rem;
   border-bottom: none; padding-bottom: 0; margin-bottom: 0;
 }
+
+/* === FORMULÁRIOS E INPUTS === */
 .form-container form, .category-form, .fixed-expense-form { display: flex; flex-direction: column; gap: 16px; }
 input[type="text"], input[type="date"], input[type="number"], .currency-input {
   padding: 12px 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); font-size: 0.95rem;
@@ -92,6 +96,8 @@ input:focus, .currency-input:focus,
 .installment-input-wrapper { display: flex; align-items: center; gap: 5px; color: var(--text-light-color); }
 .installment-section input[type="number"] { width: 60px; padding: 8px; font-size: 0.95rem; text-align: center; background-color: #ffffff; -moz-appearance: textfield; border-radius: var(--border-radius-sm); }
 .installment-section input[type="number"]::-webkit-outer-spin-button, .installment-section input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* Cabeçalho do Formulário (Sidebar) */
 .form-container-header {
   display: flex;
   justify-content: space-between;
@@ -105,6 +111,7 @@ input:focus, .currency-input:focus,
   border: none;
   padding: 0;
 }
+/* Date Picker (Global) */
 .form-date-picker {
   display: flex;
   align-items: center;
@@ -120,6 +127,7 @@ input:focus, .currency-input:focus,
   background-color: var(--input-bg-color);
   border-color: var(--border-color);
 }
+/* Input Date (Global) - Simplificado para funcionar melhor */
 .form-date-picker input[type="date"] {
   border: none;
   font-size: 0.9rem;
@@ -128,11 +136,19 @@ input:focus, .currency-input:focus,
   font-weight: 500;
   flex-grow: 1; 
   background-color: transparent; 
+  padding: 0; /* Remove padding interno */
+  margin: 0; /* Remove margem interna */
+  /* Remove width auto que pode causar problemas */
 }
 .form-date-picker input[type="date"]:focus {
     outline: none;
     box-shadow: none;
 }
+/* Não esconda mais o ícone nativo */
+/* .form-date-picker input[type="date"]::-webkit-calendar-picker-indicator { display: none; opacity: 0; } */
+
+
+/* === ESTILOS PARA REACT-SELECT (Formulário e Filtros) === */
 .react-select-container .react-select__control { min-height: 46px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background-color: var(--input-bg-color); box-shadow: none; transition: all var(--transition-std); font-size: 0.95rem; }
 .react-select-container .react-select__control--is-focused { border-color: var(--primary-color); box-shadow: none; background-color: #ffffff; }
 .react-select-container .react-select__placeholder { color: #adb5bd; }
@@ -142,6 +158,8 @@ input:focus, .currency-input:focus,
 .react-select-container .react-select__option { padding: 10px 16px; font-size: 0.95rem; }
 .react-select-container .react-select__option--is-focused { background-color: var(--primary-light); }
 .react-select-container .react-select__option--is-selected { background-color: var(--primary-color); color: white; }
+
+/* === BOTÕES DE TOGGLE GANHO/GASTO === */
 .type-toggle-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
 .type-toggle-button { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 15px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background-color: var(--card-bg-color); color: var(--text-light-color); font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all var(--transition-std); }
 .type-toggle-button svg { font-size: 1em; margin-bottom: -2px; }
@@ -149,6 +167,8 @@ input:focus, .currency-input:focus,
 .type-toggle-button.income.active { background-color: var(--income-bg-light); border-color: var(--income-color); color: var(--income-color); }
 .type-toggle-button.expense.active { background-color: var(--expense-bg-light); border-color: var(--expense-color); color: var(--expense-color); }
 .type-toggle-button:not(.active):hover { border-color: #adb5bd; background-color: #f8f9fa; color: var(--text-color); }
+
+/* === ABAS (Sidebar e Lista) === */
 .sidebar-tabs, .transaction-view-tabs { display: flex; gap: 0; margin-bottom: 0; position: relative; z-index: 1; border-bottom: 1px solid var(--border-color); }
 .sidebar-tab-button, .tab-button {
   flex: 1; padding: 12px 15px; border: 1px solid transparent; border-bottom: none; background-color: transparent; color: var(--text-light-color);
@@ -172,6 +192,8 @@ input:focus, .currency-input:focus,
 .transaction-view-tabs button.active:last-child + .list-container { border-top-right-radius: 0; }
 .transaction-view-tabs button:not(.active):first-child + .list-container { border-top-left-radius: var(--border-radius-lg); }
 .transaction-view-tabs button:not(.active):last-child + .list-container { border-top-right-radius: var(--border-radius-lg); }
+
+/* === GERENCIADORES (CATEGORIA E GASTOS FIXOS) === */
 .category-manager { margin-top: 30px; } 
 .fixed-expenses-manager { }
 .category-manager h3, .fixed-expenses-manager h3 { }
@@ -218,8 +240,7 @@ input:focus, .currency-input:focus,
 .filter-input.type-filter .react-select__placeholder { color: #adb5bd; }
 
 /* === LISTA DE TRANSAÇÕES === */
-/* 1. REMOVIDO: max-height e overflow-y da regra geral ul */
-.list-container ul { list-style: none; padding: 0; margin: 0; /* overflow-y: auto; */ flex-grow: 1; /* max-height: 600px; */ }
+.list-container ul { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
 .list-container li { display: flex; align-items: center; gap: 10px; padding: 15px; border-bottom: 1px solid var(--border-color); background-color: #ffffff; transition: background-color var(--transition-fast); border-left: 5px solid transparent; }
 .list-container li:last-child { border-bottom: none; }
 .transaction-clickable-area { flex-grow: 1; display: flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -249,7 +270,7 @@ input:focus, .currency-input:focus,
 .delete-list-button:disabled { opacity: 0.1; cursor: not-allowed; } .delete-list-button:disabled:hover { background: none; color: var(--text-light-color); transform: none; }
 .transaction-details .fixed-expense-icon { color: var(--primary-color); margin-right: 6px; font-size: 0.8em; vertical-align: middle; }
 
-/* ... (Estilos Gráficos, Tooltip, Modais inalterados) ... */
+/* === GRÁFICOS === */
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; margin-bottom: 30px; }
 .chart-item {
   background: var(--card-bg-color);
@@ -263,6 +284,8 @@ input:focus, .currency-input:focus,
   transform: translateY(-5px); 
   box-shadow: var(--shadow-lg);
 }
+
+/* === NOVO TOOLTIP CUSTOMIZADO (Design LIMPO como o EXEMPLO) === */
 [data-tooltip] {
   position: relative;
 }
@@ -319,6 +342,7 @@ input:focus, .currency-input:focus,
   border-color: transparent #333 transparent transparent; 
   transform: translateY(-50%); 
 }
+
 .chart-item h4 { margin-top: 0; margin-bottom: 20px; text-align: center; font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
 .charts-container .recharts-wrapper { font-size: 12px; }
 .empty-message { text-align: center; color: var(--text-light-color); padding: 20px 0; font-style: italic; }
@@ -326,12 +350,55 @@ input:focus, .currency-input:focus,
 .custom-tooltip .label { font-weight: 700; margin-bottom: 8px; font-size: 1rem; color: #ffffff; }
 .custom-tooltip .value { color: #ced4da; margin-bottom: 4px; }
 .custom-tooltip .percent { color: #f1c40f; font-weight: 600; margin-top: 8px; display: block; }
+
+/* === MODAIS === */
 .modal-overlay { position: fixed; inset: 0; background: rgba(30, 41, 59, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity var(--transition-std), visibility var(--transition-std); }
 .modal-overlay.open { opacity: 1; visibility: visible; }
 .modal-content { background: #ffffff; padding: 35px 40px; border-radius: var(--border-radius-lg); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); width: 100%; max-width: 450px; text-align: center; transform: scale(0.95) translateY(10px); opacity: 0; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease-in-out; }
 .modal-overlay.open .modal-content { transform: scale(1) translateY(0); opacity: 1; }
 .modal-content .react-select-container .react-select__menu { z-index: 1001; }
-.modal-content h4 { margin-top: 0; font-size: 1.6rem; color: var(--text-color); margin-bottom: 15px; font-weight: 700; }
+/* Cabeçalho do Modal Edit */
+.modal-content .form-container-header { 
+  display: flex; /* Garante Flex */
+  justify-content: space-between; /* Espaça Título e Data */
+  align-items: center; /* Alinha verticalmente */
+  border-bottom: none; 
+  padding-bottom: 0; 
+  margin-bottom: 25px; /* Aumenta espaço abaixo */
+}
+.modal-content .form-container-header h4 { 
+  margin-bottom: 0; 
+  font-size: 1.8rem; /* Aumenta título */
+  text-align: left; /* Alinha título à esquerda */
+}
+/* Date Picker dentro do Modal Edit */
+.modal-content .form-date-picker { 
+  border: 1px solid var(--border-color); 
+  background-color: var(--input-bg-color); 
+  border-radius: var(--border-radius-md); 
+  padding: 8px 12px; 
+  color: var(--text-light-color); 
+  /* Remove flex-grow para não esticar demais */
+  flex-shrink: 0; /* Impede que encolha */
+}
+/* Input Date dentro do Modal Edit - Simplificado */
+.modal-content .form-date-picker input[type="date"] { 
+  border: none; 
+  background: transparent; 
+  padding: 0; 
+  margin: 0; 
+  font-size: 0.9rem; 
+  font-family: 'Inter', sans-serif; 
+  color: var(--text-color); 
+  font-weight: 500;
+  /* Remove width: auto */
+}
+.modal-content .form-date-picker input[type="date"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+/* Fim das correções do modal */
+
 .modal-content p { font-size: 1.05rem; color: var(--text-light-color); margin-bottom: 30px; line-height: 1.7; }
 .modal-actions { display: flex; justify-content: center; gap: 15px; }
 .modal-button { padding: 12px 25px; border: none; border-radius: var(--border-radius-md); font-size: 1rem; font-weight: 600; cursor: pointer; transition: all var(--transition-std); }
@@ -346,15 +413,9 @@ input:focus, .currency-input:focus,
 .edit-category-inline-form .edit-category-color-picker { width: 45px; height: 45px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); padding: 0; cursor: pointer; flex-shrink: 0; background-color: transparent; appearance: none; -webkit-appearance: none; }
 .edit-category-inline-form .edit-category-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
 .edit-category-inline-form .edit-category-color-picker::-webkit-color-swatch { border: none; border-radius: var(--border-radius-sm); }
-.modal-content .form-container-header { display: flex; justify-content: space-between; align-items: center; border-bottom: none; padding-bottom: 0; margin-bottom: 20px; }
-.modal-content .form-container-header h4 { margin-bottom: 0; }
-.modal-content .form-date-picker { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-color); background-color: var(--input-bg-color); border-radius: var(--border-radius-md); padding: 8px 12px; color: var(--text-light-color); }
-.modal-content .form-date-picker input[type="date"] { border: none; background: transparent; padding: 0; margin: 0; font-size: 0.9rem; font-family: 'Inter', sans-serif; color: var(--text-color); width: auto; }
-.modal-content .form-date-picker input[type="date"]::-webkit-calendar-picker-indicator { display: none; }
 
 
 /* === INÍCIO: ESTILOS MELHORADOS DA PÁGINA DE RELATÓRIO === */
-/* Estilos melhorados para ReportPage integrados aqui */
 .card-style {
   background: var(--card-bg-color);
   padding: 30px;
@@ -401,26 +462,25 @@ input:focus, .currency-input:focus,
   font-weight: 400; 
   text-transform: capitalize;
 }
-/* 2. ATUALIZADO: Estilo do Total Recebido/Gasto */
 .report-total {
   background-color: var(--card-bg-color);
-  padding: 20px 30px; /* Aumenta padding vertical */
+  padding: 20px 30px; 
   border-radius: var(--border-radius-lg); 
   box-shadow: var(--shadow-md);
-  text-align: center; /* Centraliza */
-  min-width: 250px; /* Aumenta largura mínima */
-  border-left: none; /* Remove borda esquerda */
+  text-align: center; 
+  min-width: 250px; 
+  border-left: none; 
 }
 .report-total span {
   display: block;
   color: var(--text-light-color);
   font-size: 0.9rem;
-  margin-bottom: 8px; /* Mais espaço */
+  margin-bottom: 8px; 
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 .report-total strong {
-  font-size: 2.2rem; /* Maior */
+  font-size: 2.2rem; 
   font-weight: 700;
   letter-spacing: -0.5px;
 }
@@ -458,56 +518,47 @@ input:focus, .currency-input:focus,
   font-size: 0.85rem; 
   fill: var(--text-light-color);
 }
-.report-list-container {
-  /* .card-style já aplicado */
-}
-/* 3. NOVO: Estilos para o header da lista no relatório (com filtros) */
+.report-list-container { }
 .report-list-container .list-container-header.report-list-header {
-  display: flex; /* Garante flexbox */
-  justify-content: space-between; /* Espaça título e filtros */
-  align-items: center; /* Alinha verticalmente */
-  flex-wrap: wrap; /* Permite quebra se não couber */
-  gap: 15px; /* Espaço entre título e filtros */
-  padding: 0 0 20px 0; /* Remove padding superior, mantém inferior */
-  margin-bottom: 15px; /* Espaço antes da lista */
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  flex-wrap: wrap; 
+  gap: 15px; 
+  padding: 0 0 20px 0; 
+  margin-bottom: 15px; 
   border-bottom: 1px solid var(--border-color);
 }
 .report-list-container .list-container-header.report-list-header h3 {
-  margin: 0; /* Remove margem do h3 */
-  padding: 0; /* Remove padding do h3 */
-  border: none; /* Remove borda do h3 */
+  margin: 0; 
+  padding: 0; 
+  border: none; 
   font-size: 1.4rem; 
   font-weight: 600;
   color: var(--primary-color);
-  flex-shrink: 0; /* Impede que o título encolha */
+  flex-shrink: 0; 
 }
 .report-list-container .transaction-list-filters {
-  justify-content: flex-end; /* Alinha filtros à direita */
-  flex-grow: 1; /* Permite que ocupem espaço */
-  gap: 10px; /* Espaço menor entre filtros */
+  justify-content: flex-end; 
+  flex-grow: 1; 
+  gap: 10px; 
 }
-/* Ajusta largura dos filtros no relatório */
 .report-list-container .filter-input {
-  min-width: 140px; /* Menor */
-  max-width: 200px; /* Define um máximo */
+  min-width: 140px; 
+  max-width: 200px; 
 }
 .report-list-container .filter-input.description-filter {
-  max-width: 250px; /* Descrição pode ser maior */
+  max-width: 250px; 
 }
-/* FIM NOVO */
-
-/* 4. ATUALIZADO: Correção Scroll Duplo */
-.report-inner-list-container { /* Classe adicionada no JSX */
+.report-inner-list-container { 
   max-height: 600px; 
   overflow-y: auto;
-  flex-grow: 1; /* Ocupa espaço vertical */
+  flex-grow: 1; 
 }
-.report-inner-list-container ul { /* Remove scroll/height do ul interno */
+.report-inner-list-container ul { 
   overflow-y: visible;
   max-height: none;
 }
-/* FIM ATUALIZADO */
-
 .report-list-container .list-container {
   box-shadow: none;
   padding: 0;
@@ -558,11 +609,10 @@ input:focus, .currency-input:focus,
   .report-title h2 { font-size: 1.0rem; }
   .report-total strong { font-size: 1.8rem; }
   .report-chart-item h3,
-  .report-list-container .list-container-header.report-list-header h3 { /* Ajusta H3 dos filtros */
+  .report-list-container .list-container-header.report-list-header h3 { 
     font-size: 1.2rem;
     margin-bottom: 15px;
   }
-  /* Ajusta filtros em telas menores */
   .report-list-container .list-container-header.report-list-header {
       flex-direction: column;
       align-items: stretch;
@@ -573,12 +623,13 @@ input:focus, .currency-input:focus,
   }
   .report-list-container .filter-input {
       min-width: unset;
-      max-width: unset; /* Remove max-width em telas pequenas */
+      max-width: unset; 
   }
 }
 /* === FIM: ESTILOS DA PÁGINA DE RELATÓRIO === */
 
-/* ... (Estilos Responsivos Gerais, Tooltip do Checkbox inalterados) ... */
+
+/* === RESPONSIVIDADE GERAL === */
 @media (max-width: 1200px) { .main-layout { grid-template-columns: 350px 1fr; } }
 @media (max-width: 992px) { .main-layout { grid-template-columns: 1fr; } .charts-grid { grid-template-columns: 1fr; } }
 @media (max-width: 768px) {
@@ -591,7 +642,8 @@ input:focus, .currency-input:focus,
     .summary-grid { gap: 15px; margin-bottom: 30px;} .summary-card { padding: 20px; } .summary-card span { font-size: 1.8rem; }
     .main-layout { gap: 25px; }
     .form-container, .list-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager { padding: 20px; }
-    /* h3 { font-size: 1.2rem; padding-bottom: 10px; margin-bottom: 20px; } */ /* Comentado para não conflitar com report */
+    /* Ajuste h3 geral para não conflitar com report */
+    .content > h3, .sidebar > .category-manager > h3, .sidebar > .fixed-expenses-manager > h3 { font-size: 1.2rem; padding-bottom: 10px; margin-bottom: 20px; } 
     input[type="text"], input[type="date"], input[type="number"], .currency-input { padding: 10px 14px; font-size: 0.9rem;}
     .submit-button { padding: 12px; font-size: 0.95rem; }
     .modal-content { padding: 25px; max-width: 90%; } .modal-content h4 { font-size: 1.4rem; } .modal-content p { font-size: 0.95rem; } .modal-button { padding: 10px 20px; font-size: 0.9rem;}
@@ -599,36 +651,19 @@ input:focus, .currency-input:focus,
     .category-form input[type="text"], .category-form input[type="color"], .category-form .submit-button { width: 100%; height: 40px; }
     .list-container-header { flex-direction: column; align-items: stretch; }
     .transaction-list-filters { flex-direction: column; } 
-    /* .filter-input { min-width: 100%; } */ /* Comentado para não conflitar com report */
+    .filter-input { min-width: 100%; } /* Garante largura total nos filtros mobile */
     .list-container li { padding: 12px; gap: 8px; } .transaction-amount { font-size: 0.9rem; }
     .delete-list-button { width: 28px; height: 28px; font-size: 1rem; }
     .sidebar-tabs, .transaction-view-tabs { padding: 4px; border-radius: 8px; }
     .sidebar-tab-button, .tab-button { padding: 8px 10px; font-size: 0.85rem; }
     .charts-grid { gap: 20px; } .chart-item h4 { font-size: 1rem; }
 }
-/* === INÍCIO: CORREÇÃO TOOLTIP CORTADO === */
-.paid-status-toggle[data-tooltip]::before {
-  bottom: 50%; top: auto; left: 120%; transform: translateY(50%);
-}
-.paid-status-toggle[data-tooltip]::after {
-  bottom: 50%; top: auto; left: calc(120% - 5px); 
-  border-color: transparent #333 transparent transparent; 
-  transform: translateY(50%); 
-}
-/* === FIM: CORREÇÃO TOOLTIP CORTADO === */
 
 /* === INÍCIO: CORREÇÃO SCROLL LISTA DASHBOARD === */
-
-/* Aplica limite de altura e scroll APENAS na lista UL
-   dentro do .list-container principal do Dashboard.
-   Exclui a lista dentro do .report-list-container usando :not(). */
 .content > .list-container:not(.report-list-container) ul {
-  max-height: 600px; /* Ou a altura que você preferir */
+  max-height: 600px; 
   overflow-y: auto;
 }
-
-/* Garante que a regra específica para o report continue funcionando
-   e sobrescreva a regra acima se necessário (caso já não o faça) */
 .report-inner-list-container { 
   max-height: 600px; 
   overflow-y: auto;
@@ -638,5 +673,4 @@ input:focus, .currency-input:focus,
   overflow-y: visible;
   max-height: none;
 }
-
 /* === FIM: CORREÇÃO SCROLL LISTA DASHBOARD === */

@@ -375,7 +375,7 @@ const Dashboard = () => {
                                     {incomeChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
                                             <PieChart>
-                                                <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                                                <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>
                                                     {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
                                                 <Tooltip content={<CustomTooltip />} />
@@ -393,7 +393,7 @@ const Dashboard = () => {
                                     {expenseChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
                                             <PieChart>
-                                                <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                                                <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>
                                                     {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
                                                 <Tooltip content={<CustomTooltip />} />
