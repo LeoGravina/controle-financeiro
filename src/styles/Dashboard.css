@@ -43,7 +43,7 @@ header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weig
 
 /* === CARDS DE RESUMO === */
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 40px; }
-.summary-card { background: var(--card-bg-color); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); transition: all var(--transition-std); border-left: 6px solid; position: relative; overflow: hidden; }
+.summary-card { background: var(--card-bg-color); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); transition: all var(--transition-std); border-left: 6px solid; position: relative; }
 /* RE-ADICIONADO: Estilos de filtro dos cards */
 .summary-card.clickable { cursor: pointer; } 
 .summary-card[data-type="balance"] { cursor: default; }
@@ -288,51 +288,76 @@ input:focus, .currency-input:focus,
 }
 
 /* === TOOLTIP CUSTOMIZADO (Para Cards e Gráficos) === */
+/* === NOVO TOOLTIP CUSTOMIZADO (Design LIMPO como o EXEMPLO) === */
 [data-tooltip] {
   position: relative;
+  /* Garante que o elemento seja a referência para o tooltip */
 }
+
 [data-tooltip]::before,
 [data-tooltip]::after {
-  content: attr(data-tooltip);
+  content: attr(data-tooltip); /* Pega o texto do atributo */
   position: absolute;
-  bottom: 105%; 
   left: 50%;
-  transform: translateX(-50%);
-  background-color: #333;
-  color: #fff;
-  padding: 6px 12px;
-  border-radius: var(--border-radius-sm);
-  font-size: 0.85rem;
-  font-weight: 500;
-  line-height: 1.4;
-  white-space: nowrap;
+  transform: translateX(-50%); /* Centraliza horizontalmente */
   
-  /* ATUALIZADO AQUI */
-  z-index: 1010; /* <<<<<<< VALOR AUMENTADO */
-  
+  /* Escondido por padrão, aparece no hover */
   opacity: 0;
   visibility: hidden;
-  transition: opacity var(--transition-fast), visibility var(--transition-fast);
-  pointer-events: none; 
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  transition-delay: 0.1s; /* Pequeno atraso para uma aparição suave */
+  
+  z-index: 1010; /* Z-index alto para ficar acima de tudo */
+  pointer-events: none; /* Não interfere com cliques */
 }
-[data-tooltip]::after {
-  content: '';
-  position: absolute;
-  bottom: calc(105% - 5px); 
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
-  background-color: #333;
-  width: 10px;
-  height: 10px;
 
-  /* ATUALIZADO AQUI */
-  z-index: 1009; /* <<<<<<< VALOR AUMENTADO */
+/* O corpo do tooltip */
+[data-tooltip]::before {
+  top: auto; /* Deixa o browser decidir, ou define um valor específico mais tarde */
+  bottom: calc(100% + 10px); /* 10px acima do elemento */
+  background-color: #333; /* Cor de fundo */
+  color: #fff; /* Cor do texto */
+  padding: 8px 12px;
+  border-radius: 8px; /* Cantos arredondados */
+  font-size: 0.9em;
+  white-space: nowrap; /* Não quebra linha */
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* Sombra suave */
 }
+
+/* A seta do tooltip */
+[data-tooltip]::after {
+  content: ''; /* Vazio, apenas para a forma */
+  bottom: calc(100% + 5px); /* Posiciona a seta para tocar o elemento */
+  border-width: 5px; /* Tamanho da seta (triângulo) */
+  border-style: solid;
+  border-color: #333 transparent transparent transparent; /* Borda superior é a cor do tooltip */
+  transform: translateX(-50%) rotate(180deg); /* Centraliza e gira para apontar para baixo */
+}
+
+/* Visibilidade no hover */
 [data-tooltip]:hover::before,
 [data-tooltip]:hover::after {
   opacity: 1;
   visibility: visible;
-  transition-delay: 0.3s; 
+}
+
+/* === AJUSTE ESPECÍFICO PARA O CHECKBOX (LISTA DE TRANSAÇÕES) === */
+/* Este bloco sobrescreve as regras gerais APENAS para o tooltip do checkbox,
+   fazendo-o aparecer à direita para evitar ser cortado pelo overflow da lista. */
+.paid-status-toggle[data-tooltip]::before {
+  top: 50%; /* Centraliza verticalmente */
+  bottom: auto; /* Remove a regra 'bottom' da geral */
+  left: 115%; /* Posiciona à direita (ajuste este valor para mover mais ou menos) */
+  transform: translateY(-50%); /* Ajusta o centro vertical */
+}
+
+.paid-status-toggle[data-tooltip]::after {
+  top: 50%; /* Centraliza verticalmente */
+  bottom: auto; /* Remove a regra 'bottom' da geral */
+  left: calc(115% - 5px); /* Ajusta a seta para 'tocar' o checkbox */
+  border-color: transparent #333 transparent transparent; /* Seta para a esquerda */
+  transform: translateY(-50%) rotate(0deg); /* Não rotaciona */
 }
 
 .chart-item h4 { margin-top: 0; margin-bottom: 20px; text-align: center; font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
@@ -489,22 +514,6 @@ input:focus, .currency-input:focus,
 .recharts-wrapper .recharts-yAxis .recharts-cartesian-axis-tick-value {
   font-size: 0.9rem; 
 }
-
-.paid-status-toggle[data-tooltip]::before {
-  bottom: 50%;
-  top: auto;
-  left: 120%; /* Move para a direita */
-  transform: translateY(50%); /* Centraliza verticalmente */
-}
-
-.paid-status-toggle[data-tooltip]::after {
-  bottom: 50%;
-  top: auto;
-  left: calc(120% - 5px); /* Posição da seta */
-  transform: translateY(50%) rotate(135deg); /* Gira a seta para apontar p/ esquerda */
-}
-
-/* === FIM: CORREÇÃO TOOLTIP CORTADO === */
 
 /* === Responsividade para Relatório === */
 @media (max-width: 992px) {

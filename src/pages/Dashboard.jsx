@@ -1,13 +1,12 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react'; // useRef adicionado
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { FaThumbtack } from 'react-icons/fa';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, getDocs, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
-import Select from 'react-select'; 
+import Select from 'react-select';
 
-// Importando todos os componentes (SEM extensões)
 import SummaryCard from '../components/SummaryCard';
 import MonthNavigator from '../components/MonthNavigator';
 import CategoryManager from '../components/CategoryManager';
@@ -19,7 +18,6 @@ import EditCategoryModal from '../components/EditCategoryModal';
 import FixedExpensesManager from '../components/FixedExpensesManager';
 import EditFixedExpenseModal from '../components/EditFixedExpenseModal';
 
-// Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0];
@@ -37,7 +35,6 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
-// Função para gerar dados do gráfico
 const generateChartData = (transactions, type, categories) => {
     const filtered = transactions.filter(t => t.type === type);
     const total = filtered.reduce((acc, t) => acc + t.amount, 0);
@@ -72,7 +69,7 @@ const Dashboard = () => {
     const [sidebarTab, setSidebarTab] = useState('transaction');
     const [descriptionFilter, setDescriptionFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState(null);
-    const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]); // Mantém o estado do dropdown
+    const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]);
     const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, id: null, type: null });
     const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
@@ -81,17 +78,13 @@ const Dashboard = () => {
     const [isEditFixedExpenseModalOpen, setIsEditFixedExpenseModalOpen] = useState(false);
     const [editingFixedExpense, setEditingFixedExpense] = useState(null);
     const navigate = useNavigate();
-    
-    // 1. Cria a referência para a lista
     const transactionListRef = useRef(null);
 
-    // Efeito de Autenticação
     useEffect(() => {
         const unsubAuth = onAuthStateChanged(auth, currentUser => setUser(currentUser || null));
         return () => unsubAuth();
     }, []);
 
-    // Efeito para buscar todos os dados do Firestore
     useEffect(() => {
         if (!user) {
             setTransactions([]); setCategories([]); setFixedExpenses([]); setLoading(false); return;
@@ -109,7 +102,13 @@ const Dashboard = () => {
         return () => { listenersActive = false; unsubCategories(); unsubTransactions(); unsubFixedExpenses(); };
     }, [user]);
 
-    // ... (Funções handle... inalteradas) ...
+    useEffect(() => {
+        const listElement = transactionListRef.current?.querySelector('ul');
+        if (listElement) {
+            listElement.scrollTop = 0; 
+        }
+    }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]); 
+
     const handleAddTransaction = async (transaction) => {
         if (!user) return;
         const { isInstallment, installments, ...rest } = transaction;
@@ -231,19 +230,13 @@ const Dashboard = () => {
     const openEditCategoryModal = (category) => { setEditingCategory(category); setIsEditCategoryModalOpen(true); };
     const openEditFixedExpenseModal = (expense) => { setEditingFixedExpense(expense); setIsEditFixedExpenseModalOpen(true); };
     
-    // 2. NOVA FUNÇÃO para clique nos cards (define filtro E rola)
     const handleCardFilterAndScroll = (filterValue) => {
-        // Encontra o objeto de opção correspondente
         const newFilter = typeFilterOptions.find(opt => opt.value === filterValue) || typeFilterOptions[0];
-        
-        // Define o estado do filtro (se for diferente)
         if (typeFilter.value === filterValue) {
-            setTypeFilter(typeFilterOptions[0]); // Se clicar de novo, volta para 'Todos'
+            setTypeFilter(typeFilterOptions[0]); 
         } else {
             setTypeFilter(newFilter);
         }
-        
-        // Rola suavemente para a lista
         transactionListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     
@@ -256,7 +249,6 @@ const Dashboard = () => {
         });
     };
 
-    // --- LÓGICA PRINCIPAL E CÁLCULOS ---
     const allTransactionsForMonth = useMemo(() => {
         let monthTransactions = transactions.filter(t => new Date(t.date).getMonth() === currentMonth.getMonth() && new Date(t.date).getFullYear() === currentMonth.getFullYear());
         fixedExpenses.forEach(fixed => {
@@ -285,7 +277,6 @@ const Dashboard = () => {
         ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label))
     ], [categories]);
 
-    // Usa 'typeFilter.value' para filtrar
     const transactionsForDisplay = useMemo(() => {
         let baseList;
         if (transactionViewTab === 'fixed') {
@@ -295,11 +286,11 @@ const Dashboard = () => {
         }
         
         let filteredByType = baseList;
-        switch (typeFilter.value) { // Usa o estado do dropdown
+        switch (typeFilter.value) { 
             case 'income': filteredByType = baseList.filter(t => t.type === 'income'); break;
             case 'paidExpense': filteredByType = baseList.filter(t => t.type === 'expense' && t.isPaid); break;
             case 'toPayExpense': filteredByType = baseList.filter(t => t.type === 'expense' && !t.isPaid); break;
-            default: break; // 'all'
+            default: break; 
         }
         
         const descLower = descriptionFilter.toLowerCase();
@@ -330,14 +321,12 @@ const Dashboard = () => {
                 </header>
                 <main>
                     <div className="summary-grid">
-                        {/* 3. RE-ADICIONADO: onClick (com nova função) e isActive (usando typeFilter) */}
                         <SummaryCard title="Ganhos do Mês" value={incomeTotal} type="income" onClick={() => handleCardFilterAndScroll('income')} isActive={typeFilter.value === 'income'} data-tooltip="Filtrar lista: Mostrar apenas Ganhos do Mês" />
                         <SummaryCard title="Despesas Pagas" value={expensePaid} type="expense" onClick={() => handleCardFilterAndScroll('paidExpense')} isActive={typeFilter.value === 'paidExpense'} data-tooltip="Filtrar lista: Mostrar apenas Despesas Pagas" />
                         <SummaryCard title="Despesas a Pagar" value={expenseToPay} type="expense" onClick={() => handleCardFilterAndScroll('toPayExpense')} isActive={typeFilter.value === 'toPayExpense'} data-tooltip="Filtrar lista: Mostrar apenas Despesas a Pagar" />
                         <SummaryCard title="Saldo (Ganhos - Pagos)" value={balance} type="balance" data-tooltip="Saldo do Mês (Ganhos - Despesas Pagas)" />
                     </div>
                     <div className="main-layout">
-                        {/* ... (Sidebar inalterada) ... */}
                         <div className="sidebar">
                             <div className="sidebar-tabs">
                                 <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Adicionar Transação </button>
@@ -356,7 +345,6 @@ const Dashboard = () => {
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
                         </div>
                         <div className="content">
-                            {/* ... (Gráficos inalterados) ... */}
                             <div className="charts-grid">
                                 <div 
                                     className="chart-item"
@@ -368,7 +356,7 @@ const Dashboard = () => {
                                     {incomeChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
                                             <PieChart>
-                                                <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                                                <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>
                                                     {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
                                                 <Tooltip content={<CustomTooltip />} />
@@ -386,7 +374,7 @@ const Dashboard = () => {
                                     {expenseChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
                                             <PieChart>
-                                                <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
+                                                <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>
                                                     {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
                                                 <Tooltip content={<CustomTooltip />} />
@@ -396,13 +384,11 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
-                            {/* ... (Abas da lista inalteradas) ... */}
                             <div className="transaction-view-tabs">
                                 <button className={`tab-button ${transactionViewTab === 'monthly' ? 'active' : ''}`} onClick={() => setTransactionViewTab('monthly')}> Transações do Mês </button>
                                 <button className={`tab-button ${transactionViewTab === 'fixed' ? 'active' : ''}`} onClick={() => setTransactionViewTab('fixed')}> Gastos Fixos Previstos </button>
                             </div>
 
-                            {/* 4. ADICIONADO ref={transactionListRef} */}
                             <div className="list-container" ref={transactionListRef}>
                                 <div className="list-container-header">
                                     <h3>{transactionViewTab === 'monthly' ? 'Transações do Mês' : 'Gastos Fixos Previstos'}</h3>
@@ -414,7 +400,6 @@ const Dashboard = () => {
                                             onChange={(e) => setDescriptionFilter(e.target.value)}
                                             className="filter-input description-filter"
                                         />
-                                        {/* Dropdown de Tipo */}
                                         <Select
                                             options={typeFilterOptions}
                                             value={typeFilter}
