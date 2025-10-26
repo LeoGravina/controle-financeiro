@@ -3,6 +3,7 @@
 //   controlShouldRenderValue={false}.
 // - Filtro multi-categoria implementado.
 // - BarChart REVERTIDO para layout="horizontal".
+// - Scroll automático da lista ao filtrar.
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -103,13 +104,13 @@ const ReportPage = () => {
         return () => { listenersActive = false; unsubCategories(); unsubTransactions(); unsubFixedExpenses(); };
     }, [user]);
 
-     // useEffect para rolar a lista do relatório para o topo ao mudar filtros (sem a ref, busca pelo seletor)
+     // useEffect para rolar a lista do relatório para o topo ao mudar filtros
      useEffect(() => {
-        const listElement = document.querySelector('.report-inner-list-container ul'); // Busca ul dentro da classe específica
+        const listElement = document.querySelector('.report-inner-list-container ul'); 
         if (listElement) {
             listElement.scrollTop = 0;
         }
-    }, [reportDescriptionFilter, reportCategoryFilter]); // Roda quando filtros do relatório mudam
+    }, [reportDescriptionFilter, reportCategoryFilter]); 
 
     // Cálculos
     const allTransactionsForMonth = useMemo(() => {

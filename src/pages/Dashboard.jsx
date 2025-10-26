@@ -1,11 +1,9 @@
 /*
-  Dashboard.jsx COMPLETO E FINAL
-  - Select de Categoria: Adicionado hideSelectedOptions={false} e 
-    controlShouldRenderValue={false} para não mostrar selecionados na caixa principal.
-  - Filtro multi-categoria implementado.
-  - Cards clicáveis com scroll suave.
-  - Dropdown de filtro de tipo na lista.
-  - Scroll automático da lista ao filtrar.
+  Dashboard.jsx COMPLETO E FINAL (com Aba Orçamentos)
+  - Adicionada Aba "Orçamentos" na Sidebar.
+  - Importado e renderizado o componente BudgetManager.
+  - Passadas props necessárias para BudgetManager.
+  - Mantidas todas as funcionalidades anteriores (filtros, scroll, multi-categoria, etc.).
 */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -27,6 +25,8 @@ import EditTransactionModal from '../components/EditTransactionModal';
 import EditCategoryModal from '../components/EditCategoryModal';
 import FixedExpensesManager from '../components/FixedExpensesManager';
 import EditFixedExpenseModal from '../components/EditFixedExpenseModal';
+// IMPORTA O NOVO COMPONENTE
+import BudgetManager from '../components/BudgetManager';
 
 // Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
@@ -79,7 +79,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const [formType, setFormType] = useState('expense');
     const [transactionViewTab, setTransactionViewTab] = useState('monthly');
-    const [sidebarTab, setSidebarTab] = useState('transaction');
+    const [sidebarTab, setSidebarTab] = useState('transaction'); // Estado da Aba da Sidebar
     const [descriptionFilter, setDescriptionFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState(null); // Pode ser array
     const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]);
@@ -114,7 +114,19 @@ const Dashboard = () => {
             }
         }, err => { console.error("Erro Trans:", err); if (listenersActive) setLoading(false); });
         const unsubFixedExpenses = onSnapshot(query(collection(db, 'fixedExpenses'), where('userId', '==', user.uid)), (snap) => { if (listenersActive) setFixedExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() }))) }, err => console.error("Erro Fixed:", err));
-        return () => { listenersActive = false; unsubCategories(); unsubTransactions(); unsubFixedExpenses(); };
+        
+        // Listener para Orçamentos (Budgets) - Adicionado para pegar dados necessários para o futuro
+        // Se BudgetManager buscar seus próprios dados, este listener pode não ser estritamente necessário aqui AGORA,
+        // mas pode ser útil para mostrar progresso diretamente no Dashboard depois.
+        // const unsubBudgets = onSnapshot(query(collection(db, 'budgets'), where('userId', '==', user.uid)), (snap) => { /* lógica para armazenar budgets */ }, err => console.error("Erro Budgets:", err));
+
+        return () => { 
+            listenersActive = false; 
+            unsubCategories(); 
+            unsubTransactions(); 
+            unsubFixedExpenses(); 
+            // unsubBudgets(); // Descomente se adicionar o listener acima
+        };
     }, [user]);
 
     // useEffect para rolar a lista para o topo ao mudar filtros
@@ -125,7 +137,7 @@ const Dashboard = () => {
         }
     }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
 
-    // Funções handle...
+    // Funções handle... (sem alterações internas, apenas a lista completa)
     const handleAddTransaction = async (transaction) => {
         if (!user) return;
         const { isInstallment, installments, ...rest } = transaction;
@@ -348,8 +360,9 @@ const Dashboard = () => {
                     <div className="main-layout">
                         <div className="sidebar">
                             <div className="sidebar-tabs">
-                                <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Adicionar Transação </button>
+                                <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Transação </button>
                                 <button className={`sidebar-tab-button ${sidebarTab === 'fixed' ? 'active' : ''}`} onClick={() => setSidebarTab('fixed')}> Gastos Fixos </button>
+                                <button className={`sidebar-tab-button ${sidebarTab === 'budget' ? 'active' : ''}`} onClick={() => setSidebarTab('budget')}> Orçamentos </button>
                             </div>
                             
                             <div className="sidebar-content-container">
@@ -358,6 +371,12 @@ const Dashboard = () => {
                                 )}
                                 {sidebarTab === 'fixed' && (
                                     <FixedExpensesManager categories={categories} onAddFixedExpense={handleAddFixedExpense} fixedExpenses={fixedExpenses} onDeleteFixedExpense={handleDeleteFixedExpense} onEditFixedExpense={openEditFixedExpenseModal} />
+                                )}
+                                {sidebarTab === 'budget' && (
+                                    <BudgetManager 
+                                        categories={categories} 
+                                        currentMonth={currentMonth} 
+                                    />
                                 )}
                             </div>
 
@@ -375,7 +394,7 @@ const Dashboard = () => {
                                     {incomeChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
                                             <PieChart>
-                                                <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>
+                                                <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                                                     {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
                                                 <Tooltip content={<CustomTooltip />} />
@@ -393,7 +412,7 @@ const Dashboard = () => {
                                     {expenseChartData.length > 0 ? (
                                         <ResponsiveContainer width="100%" height={250}>
                                             <PieChart>
-                                                <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100}>
+                                                <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}>
                                                     {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)}
                                                 </Pie>
                                                 <Tooltip content={<CustomTooltip />} />
