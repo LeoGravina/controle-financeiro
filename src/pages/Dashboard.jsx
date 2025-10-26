@@ -1,17 +1,15 @@
 /*
-  Dashboard.jsx COMPLETO E FINAL (com Progresso Orçamentos e onSnapshot)
-  - Adicionado estado e busca para 'budgets' usando onSnapshot.
-  - O progresso dos orçamentos agora atualiza em tempo real.
-  - Calculado 'expensesByCategory' via useMemo.
-  - Importado e renderizado BudgetProgressList na sidebar.
-  - Mantidas todas as funcionalidades anteriores.
+  Dashboard.jsx COMPLETO E FINAL (com Aba Metas)
+  - Adicionada Aba "Metas" na Sidebar.
+  - Importado e renderizado o componente GoalManager.
+  - Mantidas todas as funcionalidades anteriores (Orçamentos, Filtros, Scroll, etc.).
 */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { FaThumbtack } from 'react-icons/fa';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-// onSnapshot e query adicionados/confirmados na importação
+// onSnapshot e query confirmados na importação
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, writeBatch, getDocs } from 'firebase/firestore'; 
 import { auth, db } from '../firebase/config';
 import Select from 'react-select'; 
@@ -29,6 +27,8 @@ import FixedExpensesManager from '../components/FixedExpensesManager';
 import EditFixedExpenseModal from '../components/EditFixedExpenseModal';
 import BudgetManager from '../components/BudgetManager'; 
 import BudgetProgressList from '../components/BudgetProgressList'; 
+// IMPORTA O NOVO COMPONENTE DE METAS
+import GoalManager from '../components/GoalManager'; 
 
 // Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
@@ -81,13 +81,12 @@ const Dashboard = () => {
     const [budgets, setBudgets] = useState([]); // Orçamentos do mês atual
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [loading, setLoading] = useState(true); 
-    // loadingBudgets removido, usamos o loading geral
     const [formType, setFormType] = useState('expense');
     const [transactionViewTab, setTransactionViewTab] = useState('monthly');
-    const [sidebarTab, setSidebarTab] = useState('transaction'); 
+    const [sidebarTab, setSidebarTab] = useState('transaction'); // Estado da Aba da Sidebar
     const [descriptionFilter, setDescriptionFilter] = useState('');
-    const [categoryFilter, setCategoryFilter] = useState(null); 
-    const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]); 
+    const [categoryFilter, setCategoryFilter] = useState(null); // Pode ser array
+    const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]);
     const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, id: null, type: null });
     const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
@@ -146,7 +145,7 @@ const Dashboard = () => {
             }
         }, err => console.error("Erro Fixed:", err));
         
-        // ** LISTENER onSnapshot para Orçamentos **
+        // LISTENER onSnapshot para Orçamentos
         const month = currentMonth.getMonth();
         const year = currentMonth.getFullYear();
         const budgetQuery = query(collection(db, 'budgets'),
@@ -164,7 +163,7 @@ const Dashboard = () => {
             console.error("Erro ao buscar orçamentos (onSnapshot):", error);
             if (listenersActive) {
                  setBudgets([]); 
-                 dataLoaded.budgets = true; // Marca como carregado mesmo com erro para não bloquear loading
+                 dataLoaded.budgets = true; 
                  checkLoadingDone();
             }
         });
@@ -184,8 +183,7 @@ const Dashboard = () => {
         const listElement = transactionListRef.current?.querySelector('ul');
         if (listElement) { listElement.scrollTop = 0; }
     }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
-
-    // Funções handle... (completas, mas sem alterações internas)/ Funções handle... (sem alterações internas, apenas a lista completa)
+ // Funções handle... (completas, mas sem alterações internas)/ Funções handle... (sem alterações internas, apenas a lista completa)
     const handleAddTransaction = async (transaction) => {
         if (!user) return;
         const { isInstallment, installments, ...rest } = transaction;
@@ -302,6 +300,7 @@ const Dashboard = () => {
             setEditingFixedExpense(null);
         } catch (error) { console.error("Erro Atualizar Gasto Fixo:", error); alert("Não foi possível atualizar."); }
     };
+   
     const handleSignOut = () => signOut(auth);
     const openEditTransactionModal = (transaction) => { setEditingTransaction(transaction); setIsEditTransactionModalOpen(true); };
     const openEditCategoryModal = (category) => { setEditingCategory(category); setIsEditCategoryModalOpen(true); };
@@ -398,23 +397,20 @@ const Dashboard = () => {
                         <div className="sidebar">
                             <div className="sidebar-tabs">
                                 <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Transação </button>
-                                <button className={`sidebar-tab-button ${sidebarTab === 'fixed' ? 'active' : ''}`} onClick={() => setSidebarTab('fixed')}> Gastos Fixos </button>
+                                <button className={`sidebar-tab-button ${sidebarTab === 'fixed' ? 'active' : ''}`} onClick={() => setSidebarTab('fixed')}> Fixos </button>
                                 <button className={`sidebar-tab-button ${sidebarTab === 'budget' ? 'active' : ''}`} onClick={() => setSidebarTab('budget')}> Orçamentos </button>
+                                <button className={`sidebar-tab-button ${sidebarTab === 'goal' ? 'active' : ''}`} onClick={() => setSidebarTab('goal')}> Metas </button>
                             </div>
                             
                             <div className="sidebar-content-container">
                                 {sidebarTab === 'transaction' && ( <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} /> )}
                                 {sidebarTab === 'fixed' && ( <FixedExpensesManager categories={categories} onAddFixedExpense={handleAddFixedExpense} fixedExpenses={fixedExpenses} onDeleteFixedExpense={handleDeleteFixedExpense} onEditFixedExpense={openEditFixedExpenseModal} /> )}
                                 {sidebarTab === 'budget' && ( <BudgetManager categories={categories} currentMonth={currentMonth} /> )}
+                                {sidebarTab === 'goal' && ( <GoalManager /> )} {/* Renderiza GoalManager */}
                             </div>
 
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
-
-                            {/* Renderiza a lista de progresso dos orçamentos */}
-                            <BudgetProgressList 
-                                budgets={budgets} 
-                                expensesByCategory={expensesByCategory} 
-                            />
+                            <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
                         
                         </div> {/* Fim da Sidebar */}
 

@@ -59,7 +59,7 @@ header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weig
 .summary-card[data-type="balance"] span { color: var(--primary-color); } .summary-card[data-type="balance"].negative span { color: var(--expense-color); }
 
 /* === CONTAINERS GENÉRICOS === */
-.form-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager, .budget-manager, .budget-progress-container { /* Adicionado .budget-progress-container */
+.form-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager, .budget-manager, .goal-manager, .budget-progress-container { /* Adicionado .goal-manager */
   background: var(--card-bg-color); padding: 30px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md);
 }
 .list-container {
@@ -180,7 +180,7 @@ input:focus, .currency-input:focus,
 .sidebar-tabs button.active:last-child + .sidebar-content-container { border-top-right-radius: 0; }
 .sidebar-tabs button:not(.active):first-child + .sidebar-content-container { border-top-left-radius: var(--border-radius-lg); }
 .sidebar-tabs button:not(.active):last-child + .sidebar-content-container { border-top-right-radius: var(--border-radius-lg); }
-.sidebar-content-container .form-container, .sidebar-content-container .fixed-expenses-manager, .sidebar-content-container .budget-manager { box-shadow: none; border-radius: 0; border: none; padding-top: 25px; padding-bottom: 25px; height: 100%; }
+.sidebar-content-container .form-container, .sidebar-content-container .fixed-expenses-manager, .sidebar-content-container .budget-manager, .sidebar-content-container .goal-manager { /* Adicionado .goal-manager */ box-shadow: none; border-radius: 0; border: none; padding-top: 25px; padding-bottom: 25px; height: 100%; }
 .transaction-view-tabs + .list-container { border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; margin-top: -1px; }
 .transaction-view-tabs button.active:first-child + .list-container { border-top-left-radius: 0; }
 .transaction-view-tabs button.active:last-child + .list-container { border-top-right-radius: 0; }
@@ -403,7 +403,7 @@ input:focus, .currency-input:focus,
     .signout-button { padding: 8px 15px; font-size: 0.85rem;}
     .summary-grid { gap: 15px; margin-bottom: 30px;} .summary-card { padding: 20px; } .summary-card span { font-size: 1.8rem; }
     .main-layout { gap: 25px; }
-    .form-container, .list-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager, .budget-manager { padding: 20px; }
+    .form-container, .list-container, .charts-grid .chart-item, .category-manager, .fixed-expenses-manager, .budget-manager, .goal-manager, .budget-progress-container { padding: 20px; }
     .content > h3, .sidebar > .category-manager > h3, .sidebar > .fixed-expenses-manager > h3 { font-size: 1.2rem; padding-bottom: 10px; margin-bottom: 20px; } 
     input[type="text"], input[type="date"], input[type="number"], .currency-input { padding: 10px 14px; font-size: 0.9rem;}
     .submit-button { padding: 12px; font-size: 0.95rem; }
@@ -439,41 +439,18 @@ input:focus, .currency-input:focus,
 /* === INÍCIO: ESTILOS BUDGET MANAGER === */
 .budget-manager { padding: 25px 30px; }
 .budget-manager h4 { font-size: 1.1rem; font-weight: 600; color: var(--text-color); margin-top: 0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
-/* Formulário de Adicionar - CORRIGIDO */
+/* Formulário de Adicionar Orçamento */
 .budget-add-form {
-  display: grid;
-  grid-template-columns: 1fr auto; 
-  grid-template-areas:
-    "category limit"   
-    "button button";    
-  gap: 10px 15px; 
-  align-items: center; 
-  margin-bottom: 25px; 
+  display: grid; grid-template-columns: 1fr auto; 
+  grid-template-areas: "category limit" "button button";    
+  gap: 10px 15px; align-items: center; margin-bottom: 25px; 
 }
-.budget-add-form .react-select-container { 
-  grid-area: category; 
-  min-width: 150px; 
-}
-.budget-add-form .currency-input { 
-  grid-area: limit; 
-  width: 120px; 
-  text-align: right; 
-}
-.budget-add-form .submit-button { 
-  grid-area: button; 
-  width: 100%; 
-  margin-top: 5px; 
-  padding: 12px; 
-  height: auto; 
-  font-size: 1rem; 
-}
+.budget-add-form .react-select-container { grid-area: category; min-width: 150px; }
+.budget-add-form .currency-input { grid-area: limit; width: 120px; text-align: right; }
+.budget-add-form .submit-button { grid-area: button; width: 100%; margin-top: 5px; padding: 12px; height: auto; font-size: 1rem; }
 /* Lista de Orçamentos */
 .budget-list { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
-.budget-list li { 
-    display: grid; grid-template-columns: 1fr auto auto; gap: 10px; 
-    align-items: center; padding: 12px 5px; border-bottom: 1px solid var(--input-bg-color); 
-    transition: background-color var(--transition-fast); 
-}
+.budget-list li { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: center; padding: 12px 5px; border-bottom: 1px solid var(--input-bg-color); transition: background-color var(--transition-fast); }
 .budget-list li.editable { cursor: pointer; }
 .budget-list li.editable:hover { background-color: var(--primary-light); }
 .budget-list li:last-child { border-bottom: none; }
@@ -501,3 +478,41 @@ input:focus, .currency-input:focus,
 .progress-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out; }
 .over-budget-warning { display: block; margin-top: 5px; font-size: 0.75rem; color: var(--expense-color); font-weight: 600; text-align: right; }
 /* === FIM: ESTILOS BUDGET PROGRESS LIST === */
+
+/* === INÍCIO: ESTILOS GOAL MANAGER === */
+.goal-manager { padding: 25px 30px; }
+.goal-manager h4 { font-size: 1.1rem; font-weight: 600; color: var(--text-color); margin-top: 0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
+/* Formulário de Adicionar Meta - CORRIGIDO */
+.goal-add-form {
+  display: flex; /* Muda para Flexbox */
+  flex-direction: column; /* Organiza em coluna */
+  gap: 15px; /* Espaço entre os inputs e o botão */
+  align-items: stretch; /* Faz os inputs ocuparem a largura total */
+  margin-bottom: 25px; 
+}
+.goal-add-form input[type="text"] { 
+  /* Regras de grid-area removidas */
+}
+.goal-add-form .currency-input { 
+  /* Regras de grid-area removidas */
+  width: 100%; /* Ocupa largura total agora */
+  text-align: right; 
+}
+.goal-add-form .submit-button { 
+  /* Regras de grid-area removidas */
+  width: 100%; 
+  margin-top: 5px; 
+  padding: 12px; 
+  height: auto; 
+  font-size: 1rem; 
+}
+/* Lista de Metas */
+.goal-list { list-style: none; padding: 0; margin: 0; max-height: 300px; overflow-y: auto; }
+.goal-list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 5px; border-bottom: 1px solid var(--input-bg-color); }
+.goal-list-item:last-child { border-bottom: none; }
+.goal-info { display: flex; flex-direction: column; gap: 2px; flex-grow: 1; margin-right: 10px; overflow: hidden; }
+.goal-name { font-weight: 500; color: var(--text-color); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.goal-target-amount { font-size: 0.8rem; color: var(--text-light-color); }
+.goal-delete-button { flex-shrink: 0; font-size: 0.9rem; width: 28px; height: 28px; }
+.goal-delete-button:hover { background-color: var(--expense-bg-light); color: var(--expense-color); }
+/* === FIM: ESTILOS GOAL MANAGER === */
