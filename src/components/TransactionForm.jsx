@@ -1,7 +1,9 @@
 // ATUALIZADO: src/components/TransactionForm.jsx
+// - Removido o ícone FaCalendarAlt do date picker.
 import React, { useState, useEffect, useMemo } from 'react';
-import CurrencyInput from './CurrencyInput'; // Sem extensão
-import { FaArrowUp, FaArrowDown, FaCalendarAlt } from 'react-icons/fa'; // Importa o ícone de calendário
+import CurrencyInput from './CurrencyInput';
+// FaCalendarAlt REMOVIDO da importação
+import { FaArrowUp, FaArrowDown } from 'react-icons/fa'; 
 import Select from 'react-select';
 
 const getTodayString = () => new Date().toISOString().split('T')[0];
@@ -16,7 +18,7 @@ const paymentMethodOptions = [
 const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
-    const [date, setDate] = useState(getTodayString()); // Data ainda é controlada aqui
+    const [date, setDate] = useState(getTodayString()); 
     const [category, setCategory] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState(null);
     const [isInstallment, setIsInstallment] = useState(false);
@@ -49,7 +51,7 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
         onAddTransaction({
             description: description.trim(),
             amount: parseFloat(amount),
-            date: new Date(date + 'T12:00:00'), // Pega a data do estado
+            date: new Date(date + 'T12:00:00'), 
             type,
             category: selectedCategoryName,
             paymentMethod: selectedPaymentMethod,
@@ -58,18 +60,16 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
             isPaid: false
         });
 
-        // Reset Form - Mantém o tipo
         setDescription(''); setAmount(''); setDate(getTodayString()); setIsInstallment(false);
         setCategory(null); setPaymentMethod(null);
     };
 
     return (
         <div className="form-container">
-            {/* *** NOVO CABEÇALHO DO FORMULÁRIO *** */}
             <div className="form-container-header">
                 <h3>Adicionar Transação</h3>
                 <div className="form-date-picker">
-                    <FaCalendarAlt /> {/* Ícone */}
+                    {/* FaCalendarAlt REMOVIDO DAQUI */}
                     <input 
                         type="date" 
                         value={date} 
@@ -80,7 +80,6 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
                 </div>
             </div>
 
-            {/* Botões de tipo (Ganho/Gasto) */}
             <div className="type-toggle-container">
                 <button type="button" className={`type-toggle-button income ${type === 'income' ? 'active' : ''}`} onClick={() => setType('income')}> <FaArrowUp /> Ganho </button>
                 <button type="button" className={`type-toggle-button expense ${type === 'expense' ? 'active' : ''}`} onClick={() => setType('expense')}> <FaArrowDown /> Gasto </button>
@@ -89,7 +88,6 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
             <form onSubmit={handleSubmit} style={{marginTop: '0px'}}>
                 <input type="text" placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} required />
                 
-                {/* *** NOVO: Linha Valor + Pagamento *** */}
                 <div className="form-row">
                     <CurrencyInput value={amount} onChange={setAmount} />
                     <Select
@@ -103,7 +101,6 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
                     />
                 </div>
 
-                {/* Categoria agora ocupa linha inteira */}
                 <Select
                     options={categoryOptions}
                     value={category}
@@ -115,7 +112,6 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
                     required
                 />
 
-                {/* Condição de parcelamento (inalterada, mas agora depende da linha acima) */}
                 {type === 'expense' && ['credit', 'debit', 'pix'].includes(paymentMethod?.value) && (
                     <div className="installment-section">
                         <label>

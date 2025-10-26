@@ -43,8 +43,8 @@ header h1 { font-size: 2.2rem; margin: 0; color: var(--primary-color); font-weig
 
 /* === CARDS DE RESUMO === */
 .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 25px; margin-bottom: 40px; }
-.summary-card { background: var(--card-bg-color); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); transition: all var(--transition-std); border-left: 6px solid; position: relative; }
-/* RE-ADICIONADO: Estilos de filtro dos cards */
+.summary-card { background: var(--card-bg-color); padding: 25px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); transition: all var(--transition-std); border-left: 6px solid; position: relative; /* overflow: hidden; foi removido */ }
+/* Estilos de filtro dos cards */
 .summary-card.clickable { cursor: pointer; } 
 .summary-card[data-type="balance"] { cursor: default; }
 .summary-card.clickable:not(.active):hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
@@ -129,23 +129,17 @@ input:focus, .currency-input:focus,
 }
 .form-date-picker input[type="date"] {
   border: none;
-  background: transparent;
-  padding: 0;
-  margin: 0;
   font-size: 0.9rem;
   font-family: 'Inter', sans-serif;
   color: var(--text-color);
   font-weight: 500;
-  width: auto;
+  flex-grow: 1; 
+  background-color: transparent; 
 }
-.form-date-picker input[type="date"]::-webkit-calendar-picker-indicator {
-  display: none;
-  opacity: 0;
-}
+
 .form-date-picker input[type="date"]:focus {
-  outline: none;
-  box-shadow: none;
-  background: transparent;
+    outline: none;
+    box-shadow: none;
 }
 
 
@@ -155,8 +149,7 @@ input:focus, .currency-input:focus,
 .react-select-container .react-select__placeholder { color: #adb5bd; }
 .react-select-container .react-select__indicator-separator { display: none; }
 .react-select-container .react-select__dropdown-indicator { color: var(--text-light-color); }
-/* ATUALIZADO: z-index do menu */
-.react-select-container .react-select__menu { border-radius: var(--border-radius-md); box-shadow: var(--shadow-md); margin-top: 4px; z-index: 20; /* Aumentado para 20 */ }
+.react-select-container .react-select__menu { border-radius: var(--border-radius-md); box-shadow: var(--shadow-md); margin-top: 4px; z-index: 20; }
 .react-select-container .react-select__option { padding: 10px 16px; font-size: 0.95rem; }
 .react-select-container .react-select__option--is-focused { background-color: var(--primary-light); }
 .react-select-container .react-select__option--is-selected { background-color: var(--primary-color); color: white; }
@@ -184,8 +177,7 @@ input:focus, .currency-input:focus,
 }
 .sidebar-tab-button:not(.active):hover, .tab-button:not(.active):hover { background-color: #e9ecef; color: var(--text-color); }
 /* Conexão Visual Sidebar */
-/* ATUALIZADO: removido 'overflow: hidden' */
-.sidebar-content-container { border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); margin-top: -1px; box-shadow: var(--shadow-md); /* overflow: hidden; */ padding: 0; background-color: var(--card-bg-color); }
+.sidebar-content-container { border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg); margin-top: -1px; box-shadow: var(--shadow-md); padding: 0; background-color: var(--card-bg-color); }
 .sidebar-tabs button.active:first-child + .sidebar-content-container { border-top-left-radius: 0; }
 .sidebar-tabs button.active:last-child + .sidebar-content-container { border-top-right-radius: 0; }
 .sidebar-tabs button:not(.active):first-child + .sidebar-content-container { border-top-left-radius: var(--border-radius-lg); }
@@ -233,13 +225,17 @@ input:focus, .currency-input:focus,
 }
 .list-container-header h3 { margin: 0; border: none; padding: 0; font-size: 1.3rem; }
 .transaction-list-filters { display: flex; gap: 15px; flex-grow: 1; justify-content: flex-end; }
-.filter-input { flex-grow: 1; min-width: 180px; max-width: 250px; }
+.filter-input { flex-grow: 1; min-width: 150px; /* Ajuste ou remova conforme necessário */ } 
 .filter-input.description-filter {
   padding: 10px 14px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color);
   font-size: 0.9rem; background-color: white; height: 42px; 
 }
 .filter-input.category-filter .react-select__control { min-height: 42px; height: 42px; font-size: 0.9rem; background-color: white; }
 .filter-input.category-filter .react-select__placeholder { color: #adb5bd; }
+/* Estilo para o novo type-filter */
+.filter-input.type-filter .react-select__control { min-height: 42px; height: 42px; font-size: 0.9rem; background-color: white; }
+.filter-input.type-filter .react-select__placeholder { color: #adb5bd; }
+
 
 /* === LISTA DE TRANSAÇÕES === */
 .list-container ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; max-height: 600px; }
@@ -287,7 +283,6 @@ input:focus, .currency-input:focus,
   box-shadow: var(--shadow-lg);
 }
 
-/* === TOOLTIP CUSTOMIZADO (Para Cards e Gráficos) === */
 /* === NOVO TOOLTIP CUSTOMIZADO (Design LIMPO como o EXEMPLO) === */
 [data-tooltip] {
   position: relative;
@@ -299,7 +294,6 @@ input:focus, .currency-input:focus,
   content: attr(data-tooltip); /* Pega o texto do atributo */
   position: absolute;
   left: 50%;
-  transform: translateX(-50%); /* Centraliza horizontalmente */
   
   /* Escondido por padrão, aparece no hover */
   opacity: 0;
@@ -313,8 +307,9 @@ input:focus, .currency-input:focus,
 
 /* O corpo do tooltip */
 [data-tooltip]::before {
-  top: auto; /* Deixa o browser decidir, ou define um valor específico mais tarde */
+  top: auto; 
   bottom: calc(100% + 10px); /* 10px acima do elemento */
+  transform: translateX(-50%); /* Centraliza horizontalmente */
   background-color: #333; /* Cor de fundo */
   color: #fff; /* Cor do texto */
   padding: 8px 12px;
@@ -328,11 +323,13 @@ input:focus, .currency-input:focus,
 /* A seta do tooltip */
 [data-tooltip]::after {
   content: ''; /* Vazio, apenas para a forma */
-  bottom: calc(100% + 5px); /* Posiciona a seta para tocar o elemento */
-  border-width: 5px; /* Tamanho da seta (triângulo) */
+  bottom: calc(100% + 5px); /* Posiciona a base da seta 5px ACIMA do elemento */
+  border-width: 5px; /* Tamanho da seta */
   border-style: solid;
-  border-color: #333 transparent transparent transparent; /* Borda superior é a cor do tooltip */
-  transform: translateX(-50%) rotate(180deg); /* Centraliza e gira para apontar para baixo */
+  /* CORREÇÃO AQUI: Cor na borda inferior para apontar para cima */
+  border-color: transparent transparent #333 transparent; 
+  /* CORREÇÃO AQUI: Centraliza a seta */
+  transform: translateX(-50%); 
 }
 
 /* Visibilidade no hover */
@@ -343,21 +340,19 @@ input:focus, .currency-input:focus,
 }
 
 /* === AJUSTE ESPECÍFICO PARA O CHECKBOX (LISTA DE TRANSAÇÕES) === */
-/* Este bloco sobrescreve as regras gerais APENAS para o tooltip do checkbox,
-   fazendo-o aparecer à direita para evitar ser cortado pelo overflow da lista. */
 .paid-status-toggle[data-tooltip]::before {
-  top: 50%; /* Centraliza verticalmente */
-  bottom: auto; /* Remove a regra 'bottom' da geral */
-  left: 115%; /* Posiciona à direita (ajuste este valor para mover mais ou menos) */
-  transform: translateY(-50%); /* Ajusta o centro vertical */
+  top: 50%; 
+  bottom: auto; 
+  left: 115%; 
+  transform: translateY(-50%); 
 }
 
 .paid-status-toggle[data-tooltip]::after {
-  top: 50%; /* Centraliza verticalmente */
-  bottom: auto; /* Remove a regra 'bottom' da geral */
-  left: calc(115% - 5px); /* Ajusta a seta para 'tocar' o checkbox */
-  border-color: transparent #333 transparent transparent; /* Seta para a esquerda */
-  transform: translateY(-50%) rotate(0deg); /* Não rotaciona */
+  top: 50%; 
+  bottom: auto; 
+  left: calc(115% - 5px); 
+  border-color: transparent #333 transparent transparent; 
+  transform: translateY(-50%) rotate(0deg); 
 }
 
 .chart-item h4 { margin-top: 0; margin-bottom: 20px; text-align: center; font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
@@ -374,9 +369,8 @@ input:focus, .currency-input:focus,
 .modal-overlay.open { opacity: 1; visibility: visible; }
 .modal-content { background: #ffffff; padding: 35px 40px; border-radius: var(--border-radius-lg); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2); width: 100%; max-width: 450px; text-align: center; transform: scale(0.95) translateY(10px); opacity: 0; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease-in-out; }
 .modal-overlay.open .modal-content { transform: scale(1) translateY(0); opacity: 1; }
-/* ATUALIZADO: z-index do menu select DENTRO do modal */
 .modal-content .react-select-container .react-select__menu {
-  z-index: 1001; /* Garante que o menu do select apareça SOBRE o modal */
+  z-index: 1001; 
 }
 .modal-content h4 { margin-top: 0; font-size: 1.6rem; color: var(--text-color); margin-bottom: 15px; font-weight: 700; }
 .modal-content p { font-size: 1.05rem; color: var(--text-light-color); margin-bottom: 30px; line-height: 1.7; }
@@ -548,3 +542,15 @@ input:focus, .currency-input:focus,
   }
 }
 /* === FIM: ESTILOS DA PÁGINA DE RELATÓRIO === */
+
+/* === INÍCIO: CORREÇÃO TOOLTIP CORTADO === */
+/* Esta regra muda a posição do tooltip APENAS no checkbox
+  para que ele apareça ao lado, e não seja cortado pelo 'overflow' da lista.
+*/
+.paid-status-toggle[data-tooltip]::before {
+  bottom: 50%; top: auto; left: 120%; transform: translateY(50%);
+}
+.paid-status-toggle[data-tooltip]::after {
+  bottom: 50%; top: auto; left: calc(120% - 5px); transform: translateY(50%) rotate(135deg);
+}
+/* === FIM: CORREÇÃO TOOLTIP CORTADO === */
