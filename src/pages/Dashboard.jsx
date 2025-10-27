@@ -260,10 +260,82 @@ const Dashboard = () => {
         if (transaction.isFixed && !transaction.isPaid) { const realTransaction = { ...transaction }; delete realTransaction.id; delete realTransaction.isFixed; realTransaction.isPaid = true; await handleAddTransaction(realTransaction); } else if (!transaction.isFixed && transaction.id) { try { await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: !transaction.isPaid }); } catch (error) { console.error("Erro Toggle Pago:", error); } }
     };
     const handleDeleteRequest = (id, type) => {
-        if (type === 'transaction' && id.startsWith('fixed-')) { alert("Gastos fixos só podem ser removidos na seção 'Gastos Fixos'."); return; } if (type === 'fixedExpense') { handleDeleteFixedExpense(id); return; } setDeleteModalState({ isOpen: true, id, type });
+        if (type === 'transaction' && id.startsWith('fixed-')) { 
+            alert("Gastos fixos só podem ser removidos na seção 'Gastos Fixos'."); 
+            return; 
+        } 
+        if (type === 'fixedExpense') { 
+            handleDeleteFixedExpense(id); 
+            return; 
+        } 
+        
+        let transactionData = null;
+        if (type === 'transaction') {
+            // Pega os dados da transação ANTES de abrir o modal
+            transactionData = transactions.find(t => t.id === id) || null;
+        }
+        
+        // Salva os dados da transação no estado do modal
+        setDeleteModalState({ isOpen: true, id, type, transactionData });
     };
+    // ATUALIZADO: handleConfirmDelete
     const handleConfirmDelete = async () => {
-        const { id, type } = deleteModalState; if (!id || !type || type === 'fixedExpense') return; const collectionName = type === 'transaction' ? 'transactions' : 'categories'; const stateSetter = type ==='transaction' ? setTransactions : setCategories; const originalState = type === 'transaction' ? [...transactions] : [...categories]; setDeleteModalState({ isOpen: false, id: null, type: null }); stateSetter(prev => prev.filter(item => item.id !== id)); try { await deleteDoc(doc(db, collectionName, id)); } catch (error) { console.error(`Erro Deletar ${type}:`, error); stateSetter(originalState); alert(`Erro ao excluir.`); }
+        // Pega os dados completos do estado, incluindo transactionData
+        const { id, type, transactionData } = deleteModalState; 
+        if (!id || !type) return;
+
+        // Lógica de UI otimista (permanece a mesma)
+        const collectionName = type === 'transaction' ? 'transactions' : 'categories';
+        const stateSetter = type ==='transaction' ? setTransactions : setCategories;
+        const originalState = type === 'transaction' ? [...transactions] : [...categories];
+        
+        // Limpa o estado do modal
+        setDeleteModalState({ isOpen: false, id: null, type: null, transactionData: null }); 
+        
+        // Trava de segurança para categoria "Metas"
+        if (type === 'category') {
+             const categoryToDelete = categories.find(c => c.id === id);
+             if (categoryToDelete?.name.toLowerCase() === 'metas') {
+                 alert("Não é possível excluir a categoria 'Metas', pois ela é essencial para a funcionalidade de Metas.");
+                 return; // Aborta a exclusão
+             }
+        }
+        
+        // Atualização otimista da UI
+        stateSetter(prev => prev.filter(item => item.id !== id));
+
+        try {
+            // Lógica de exclusão no backend
+            
+            // CASO 1: É uma contribuição de meta (precisa de batch)
+            if (type === 'transaction' && transactionData?.description?.startsWith('Contribuição para Meta:')) {
+                
+                const goalName = transactionData.description.replace('Contribuição para Meta: ', '').trim();
+                const goalToUpdate = goals.find(g => g.goalName === goalName);
+                
+                const batch = writeBatch(db);
+                const txRef = doc(db, 'transactions', id);
+                batch.delete(txRef); // 1. Deleta a transação
+
+                // 2. Se a meta ainda existir, reverte (subtrai) o valor
+                if (goalToUpdate) {
+                    const goalRef = doc(db, 'goals', goalToUpdate.id);
+                    batch.update(goalRef, { 
+                        currentAmount: increment(-transactionData.amount) // Usa increment() com valor negativo
+                    });
+                }
+                await batch.commit(); // Executa as duas operações
+            
+            // CASO 2: É uma exclusão normal (transação, categoria, etc.)
+            } else {
+                await deleteDoc(doc(db, collectionName, id));
+            }
+            
+        } catch (error) {
+            console.error(`Erro ao Deletar ${type}:`, error);
+            stateSetter(originalState); // Reverte a UI em caso de erro
+            alert(`Erro ao excluir.`);
+        }
     };
     const handleAddFixedExpense = async (expense) => {
         if (!user) return; try { await addDoc(collection(db, 'fixedExpenses'), { ...expense, userId: user.uid }); } catch (error) { console.error("Erro Adicionar Gasto Fixo:", error); }
