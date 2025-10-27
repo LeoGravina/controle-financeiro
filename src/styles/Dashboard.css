@@ -211,45 +211,37 @@ input:focus, .currency-input:focus,
 .color-dot { height: 16px; width: 16px; border-radius: 50%; display: inline-block; margin-right: 12px; border: 2px solid var(--card-bg-color); box-shadow: 0 0 0 1px rgba(0,0,0,0.1); flex-shrink: 0; }
 
 /* === BOTÕES DE AÇÃO UNIFICADOS (Edit, Save, Cancel, Delete) === */
-/* Botões de ícone genéricos (Editar, Salvar, Cancelar) */
-.action-button { 
+.action-button, .delete-button { 
   background: none; border: none; cursor: pointer; 
-  font-size: 1.1rem; /* Tamanho padrão do ícone */
   line-height: 1; padding: 6px; border-radius: 50%; width: 30px; height: 30px; 
   display: flex; align-items: center; justify-content: center; 
   transition: all var(--transition-fast); color: var(--text-light-color); 
 }
-/* Hover para botões de ação (exceto delete) */
+.action-button { font-size: 1.1rem; }
+.delete-button {
+  font-size: 1.5rem; 
+  font-weight: bold;
+  opacity: 0; 
+  margin-left: auto; 
+}
+.category-list li:hover .delete-button, 
+.fixed-expense-list li:hover .delete-button,
+.goal-list-item:hover .delete-button,
+.list-container li:hover .delete-button, /* .delete-list-button unificado */
+.list-container li:hover .delete-list-button /* Mantém regra antiga p/ garantir */
+ { 
+  opacity: 0.6; 
+}
 .action-button:not(.delete-button):hover {
     background-color: var(--primary-light);
     color: var(--primary-hover);
 }
-/* Botão DELETAR (X) - Estilo unificado de Transação */
-.delete-button, .delete-list-button {
-  background: none; border: none; color: var(--text-light-color); 
-  border-radius: 50%; width: 30px; height: 30px; cursor: pointer; 
-  font-size: 1.5rem; /* 'X' grande */
-  display: flex; justify-content: center; align-items: center; 
-  transition: all var(--transition-fast); 
-  opacity: 0; /* Começa invisível */
-  font-weight: bold;
-  margin-left: auto; /* Empurra para a direita */
-}
-/* Aparece ao passar o mouse sobre o item da lista PAI (li) */
-.list-container li:hover .delete-list-button,
-.category-list li:hover .delete-button, 
-.fixed-expense-list li:hover .delete-button,
-.goal-list-item:hover .delete-button { 
-  opacity: 0.6; 
-}
-/* Hover do próprio botão DELETE */
 .delete-button:hover, .delete-list-button:hover { 
   opacity: 1; 
   background-color: var(--expense-bg-light); 
   color: var(--expense-color); 
   transform: scale(1.1); 
 }
-/* Estilo desabilitado */
 .action-button:disabled, .delete-button:disabled, .delete-list-button:disabled { 
     opacity: 0.1 !important; 
     cursor: not-allowed; 
@@ -259,7 +251,6 @@ input:focus, .currency-input:focus,
     color: var(--text-light-color); 
     transform: none; 
 }
-/* Hover específico para botões Save/Cancel (no modo edição de budget/goal) */
 .budget-actions .action-button.save:hover { background-color: var(--income-bg-light); color: var(--income-color); }
 .budget-actions .action-button.cancel:hover { background-color: var(--expense-bg-light); color: var(--expense-color); }
 
@@ -308,6 +299,7 @@ input:focus, .currency-input:focus,
 .transaction-amount { font-weight: 600; font-size: 1rem; margin-left: auto; white-space: nowrap; text-align: right; }
 .transaction-amount.income { color: var(--income-color); } .transaction-amount.expense { color: var(--expense-color); }
 .transaction-actions { display: flex; gap: 5px; }
+/* .delete-list-button (Removido, agora coberto por .delete-button) */
 .transaction-details .fixed-expense-icon { color: var(--primary-color); margin-right: 6px; font-size: 0.8em; vertical-align: middle; }
 
 /* === GRÁFICOS === */
@@ -464,7 +456,7 @@ input:focus, .currency-input:focus,
     .transaction-list-filters { flex-direction: column; } 
     .filter-input { min-width: 100%; } 
     .list-container li { padding: 12px; gap: 8px; } .transaction-amount { font-size: 0.9rem; }
-    .delete-button { width: 28px; height: 28px; font-size: 1rem; } /* Ajusta tamanho do botão delete no mobile */
+    .delete-button { width: 28px; height: 28px; font-size: 1rem; } 
     .sidebar-tabs, .transaction-view-tabs { padding: 4px; border-radius: 8px; }
     .sidebar-tab-button, .tab-button { padding: 8px 10px; font-size: 0.85rem; }
     .charts-grid { gap: 20px; } .chart-item h4 { font-size: 1rem; }
@@ -506,7 +498,6 @@ input:focus, .currency-input:focus,
 .budget-limit-amount { font-weight: 600; color: var(--primary-color); text-align: right; white-space: nowrap; }
 .budget-edit-input .currency-input { padding: 8px 10px; font-size: 0.9rem; height: 36px; background-color: white; width: 100px; }
 .budget-actions { display: flex; gap: 5px; justify-content: flex-end; }
-/* Os hovers específicos de .action-button (save/cancel) estão unificados na regra .action-button:not(.delete-button):hover e .delete-button:hover */
 .budget-actions .action-button.save:hover { background-color: var(--income-bg-light); color: var(--income-color); }
 .budget-actions .action-button.cancel:hover { background-color: var(--expense-bg-light); color: var(--expense-color); }
 /* === FIM: ESTILOS BUDGET MANAGER === */
@@ -557,9 +548,9 @@ input:focus, .currency-input:focus,
 .goal-progress-item { margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--input-bg-color); }
 .goal-progress-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
 .goal-progress-item.complete .goal-item-name { }
-.goal-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; } /* Div para nome e botão */
+.goal-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; } 
 .goal-item-name { font-weight: 500; color: var(--text-color); font-size: 0.95rem; display: flex; align-items: center; }
-.goal-item-values-container { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; } /* Div para valores e badge */
+.goal-item-values-container { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; } 
 .goal-item-values { font-size: 0.85rem; color: var(--text-light-color); font-weight: 500; white-space: nowrap; }
 .goal-item-values.complete-text { color: var(--income-color); font-weight: 600; }
 .goal-complete-badge { font-size: 0.75rem; font-weight: 600; color: var(--income-color); }
@@ -568,11 +559,11 @@ input:focus, .currency-input:focus,
 .add-to-goal-button {
     background-color: var(--primary-light); color: var(--primary-hover);
     border: none; border-radius: var(--border-radius-sm);
-    padding: 4px 8px; /* Padding menor */
-    font-size: 0.7rem; /* Fonte menor */
+    padding: 4px 8px; 
+    font-size: 0.7rem; 
     font-weight: 600; cursor: pointer;
     transition: all var(--transition-fast);
-    flex-shrink: 0; /* Impede que encolha */
+    flex-shrink: 0; 
 }
 .add-to-goal-button:hover { background-color: var(--primary-color); color: white; }
 /* === FIM: ESTILOS GOAL PROGRESS LIST === */

@@ -1,18 +1,17 @@
 /*
-  Dashboard.jsx COMPLETO
-  - Inclui Abas: Transação, Fixos, Orçamentos, Metas.
-  - Inclui Exibição: BudgetProgressList e GoalProgressList.
-  - Inclui Busca de Dados: onSnapshot para all.
-  - Inclui Filtros: Cards clicáveis + Dropdowns (Descrição, Tipo, Multi-Categoria).
-  - Inclui Scroll: Ao clicar no card e ao mudar filtro.
-  - Inclui Gráficos clicáveis para ReportPage.
+  Dashboard.jsx COMPLETO E FINAL (COM CATEGORIAS PADRÃO E CONTRIBUIÇÃO DE METAS)
+  - Adiciona 'createDefaultCategories' para criar 'Metas' e outras categorias padrão para novos usuários.
+  - Corrige erro 'onAddFundsClick is not a function' passando a prop correta.
+  - Implementa 'AddFundsToGoalModal' e a lógica 'handleAddFundsToGoal'.
+  - 'handleAddFundsToGoal' usa 'increment' e 'writeBatch' para atualizar meta e criar transação.
 */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { FaThumbtack } from 'react-icons/fa';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, writeBatch, getDocs } from 'firebase/firestore'; 
+// increment e getDocs importados
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, writeBatch, getDocs, increment } from 'firebase/firestore'; 
 import { auth, db } from '../firebase/config';
 import Select from 'react-select'; 
 
@@ -31,6 +30,8 @@ import BudgetManager from '../components/BudgetManager';
 import BudgetProgressList from '../components/BudgetProgressList'; 
 import GoalManager from '../components/GoalManager'; 
 import GoalProgressList from '../components/GoalProgressList'; 
+// IMPORTA O NOVO MODAL
+import AddFundsToGoalModal from '../components/AddFundsToGoalModal'; 
 
 // Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
@@ -74,6 +75,33 @@ const typeFilterOptions = [
     { value: 'toPayExpense', label: 'Desp. a Pagar' }
 ];
 
+// Função para criar categorias padrão para novos usuários
+const createDefaultCategories = async (userId) => {
+    const batch = writeBatch(db);
+    const defaultCategories = [
+        { name: 'Metas', color: '#6a82fb', userId: userId }, // Categoria CRUCIAL
+        { name: 'Alimentação', color: '#f39c12', userId: userId },
+        { name: 'Transporte', color: '#3498db', userId: userId },
+        { name: 'Lazer', color: '#2ecc71', userId: userId },
+        { name: 'Moradia', color: '#9b59b6', userId: userId },
+        { name: 'Salário', color: '#1abc9c', userId: userId },
+        { name: 'Outros', color: '#bdc3c7', userId: userId }
+    ];
+    
+    defaultCategories.forEach(cat => {
+        const newCatRef = doc(collection(db, 'categories'));
+        batch.set(newCatRef, cat);
+    });
+    
+    try {
+        await batch.commit();
+        console.log("Categorias padrão criadas com sucesso!");
+    } catch (error) {
+        console.error("Erro ao criar categorias padrão:", error);
+    }
+};
+
+
 const Dashboard = () => {
     // Estados
     const [user, setUser] = useState(null);
@@ -81,7 +109,7 @@ const Dashboard = () => {
     const [categories, setCategories] = useState([]);
     const [fixedExpenses, setFixedExpenses] = useState([]);
     const [budgets, setBudgets] = useState([]); 
-    const [goals, setGoals] = useState([]); // Estado para Metas
+    const [goals, setGoals] = useState([]); 
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [loading, setLoading] = useState(true); 
     const [formType, setFormType] = useState('expense');
@@ -97,6 +125,10 @@ const Dashboard = () => {
     const [editingCategory, setEditingCategory] = useState(null);
     const [isEditFixedExpenseModalOpen, setIsEditFixedExpenseModalOpen] = useState(false);
     const [editingFixedExpense, setEditingFixedExpense] = useState(null);
+    // Estados para o Modal de Metas
+    const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false);
+    const [selectedGoal, setSelectedGoal] = useState(null); 
+
     const navigate = useNavigate();
     const transactionListRef = useRef(null);
 
@@ -123,9 +155,21 @@ const Dashboard = () => {
             }
         };
 
-        // Listeners
-        const unsubCategories = onSnapshot(query(collection(db, 'categories'), where('userId', '==', user.uid)), (snap) => { 
-            if (listenersActive) { setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() }))); dataLoaded.categories = true; checkLoadingDone(); }
+        // Listener de Categorias (com criação de Padrão)
+        const unsubCategories = onSnapshot(query(collection(db, 'categories'), where('userId', '==', user.uid)), async (snap) => { 
+            if (listenersActive) {
+                // Verifica se o usuário é novo (não tem categorias)
+                if (snap.empty) {
+                    console.log("Usuário sem categorias, criando padrões...");
+                    await createDefaultCategories(user.uid);
+                    // O listener vai disparar de novo automaticamente com as novas categorias,
+                    // então não precisamos 'setCategories' aqui.
+                } else {
+                    setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+                }
+                dataLoaded.categories = true; 
+                checkLoadingDone(); 
+            }
         }, err => { console.error("Erro Cat:", err); if (listenersActive) setLoading(false); });
         
         const unsubTransactions = onSnapshot(query(collection(db, 'transactions'), where('userId', '==', user.uid)), (snap) => {
@@ -242,6 +286,58 @@ const Dashboard = () => {
     };
     const handleChartClick = (type) => { navigate('/report', { state: { reportType: type, reportMonth: currentMonth } }); };
 
+    // Funções para o Modal de Adicionar Fundos
+    const openAddFundsModal = (goal) => {
+        setSelectedGoal(goal);
+        setIsAddFundsModalOpen(true);
+    };
+    const closeAddFundsModal = () => {
+        setSelectedGoal(null);
+        setIsAddFundsModalOpen(false);
+    };
+    
+    // Função que Salva a Contribuição (Atualiza Meta + Cria Transação)
+    const handleAddFundsToGoal = async (goal, amount, paymentMethod) => {
+        if (!user || !goal || amount <= 0 || !paymentMethod) {
+            throw new Error("Dados inválidos para adicionar fundos.");
+        }
+
+        // Procura a categoria "Metas" (agora será criada por padrão)
+        const metaCategory = categories.find(c => c.name.toLowerCase() === 'metas');
+        if (!metaCategory) {
+            // Este erro agora só deve acontecer se o usuário deletar a categoria padrão
+            throw new Error("Erro: Categoria 'Metas' não encontrada. Por favor, crie uma categoria chamada 'Metas' para registrar esta contribuição.");
+        }
+
+        const batch = writeBatch(db);
+        
+        // 1. Atualiza a meta (incrementa o valor)
+        const goalRef = doc(db, 'goals', goal.id);
+        batch.update(goalRef, {
+            currentAmount: increment(amount) // 'increment' é do 'firebase/firestore'
+        });
+
+        // 2. Cria uma nova transação de GASTO para justificar a saída do dinheiro
+        const newTransactionRef = doc(collection(db, 'transactions'));
+        const newTransactionData = {
+            userId: user.uid,
+            description: `Contribuição para Meta: ${goal.goalName}`,
+            amount: amount,
+            date: Timestamp.now(), // Usa a data atual
+            type: 'expense', // É um gasto
+            category: metaCategory.name, // Categoria "Metas"
+            paymentMethod: paymentMethod,
+            isPaid: true, // Contribuição é sempre "paga"
+            isInstallment: false,
+            installments: 1,
+        };
+        batch.set(newTransactionRef, newTransactionData);
+
+        // 3. Executa ambas as operações
+        await batch.commit();
+        // onSnapshot vai atualizar a UI
+    };
+
     // --- LÓGICA PRINCIPAL E CÁLCULOS ---
     const allTransactionsForMonth = useMemo(() => {
         let monthTransactions = transactions.filter(t => new Date(t.date).getMonth() === currentMonth.getMonth() && new Date(t.date).getFullYear() === currentMonth.getFullYear());
@@ -256,19 +352,15 @@ const Dashboard = () => {
         });
         return monthTransactions;
     }, [transactions, fixedExpenses, currentMonth]);
-
     const { incomeTotal, expensePaid, expenseToPay, balance } = useMemo(() => {
         let income = 0, paidExpense = 0, toPayExpense = 0; allTransactionsForMonth.forEach(t => { (t.type === 'income') ? income += t.amount : (t.isPaid ? paidExpense += t.amount : toPayExpense += t.amount); }); return { incomeTotal: income, expensePaid: paidExpense, expenseToPay: toPayExpense, balance: income - paidExpense };
     }, [allTransactionsForMonth]);
-
     const expenseChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'expense', categories), [allTransactionsForMonth, categories]);
     const incomeChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'income', categories), [allTransactionsForMonth, categories]);
     const categoryFilterOptions = useMemo(() => [ ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label)) ], [categories]);
-    
     const transactionsForDisplay = useMemo(() => {
         let baseList; if (transactionViewTab === 'fixed') { baseList = allTransactionsForMonth.filter(t => t.isFixed); } else { baseList = allTransactionsForMonth.filter(t => !t.isFixed || (t.isFixed && t.isPaid)); } let filteredByType = baseList; switch (typeFilter.value) { case 'income': filteredByType = baseList.filter(t => t.type === 'income'); break; case 'paidExpense': filteredByType = baseList.filter(t => t.type === 'expense' && t.isPaid); break; case 'toPayExpense': filteredByType = baseList.filter(t => t.type === 'expense' && !t.isPaid); break; default: break; } const descLower = descriptionFilter.toLowerCase(); const selectedCategoryNames = categoryFilter ? categoryFilter.map(opt => opt.value.toLowerCase()) : []; return filteredByType.filter(t => { const descriptionMatch = t.description?.toLowerCase().includes(descLower) ?? true; const categoryMatch = selectedCategoryNames.length === 0 || selectedCategoryNames.includes(t.category?.toLowerCase()); return descriptionMatch && categoryMatch; });
     }, [typeFilter, transactionViewTab, allTransactionsForMonth, descriptionFilter, categoryFilter, categories]); 
-    
     const expensesByCategory = useMemo(() => {
         const monthlyExpenses = allTransactionsForMonth.filter(t => t.type === 'expense'); return monthlyExpenses.reduce((acc, transaction) => { const categoryName = transaction.category || 'Outros'; acc[categoryName] = (acc[categoryName] || 0) + transaction.amount; return acc; }, {});
     }, [allTransactionsForMonth]); 
@@ -282,6 +374,15 @@ const Dashboard = () => {
             <EditTransactionModal isOpen={isEditTransactionModalOpen} onClose={() => { setIsEditTransactionModalOpen(false); setEditingTransaction(null); }} transaction={editingTransaction} categories={categories} onSave={handleUpdateTransaction} />
             <EditCategoryModal isOpen={isEditCategoryModalOpen} onClose={() => { setIsEditCategoryModalOpen(false); setEditingCategory(null); }} category={editingCategory} onSave={handleUpdateCategory} />
             <EditFixedExpenseModal isOpen={isEditFixedExpenseModalOpen} onClose={() => { setIsEditFixedExpenseModalOpen(false); setEditingFixedExpense(null); }} expense={editingFixedExpense} categories={categories} onSave={handleUpdateFixedExpense} />
+            
+            {/* RENDERIZA O MODAL DE ADICIONAR FUNDOS */}
+            <AddFundsToGoalModal 
+                isOpen={isAddFundsModalOpen}
+                onClose={closeAddFundsModal}
+                goal={selectedGoal}
+                categories={categories} // Passa categorias para o modal
+                onSave={handleAddFundsToGoal}
+            />
 
             <div className="dashboard-container">
                 <header>
@@ -316,7 +417,12 @@ const Dashboard = () => {
 
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
                             <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
-                            <GoalProgressList goals={goals} />
+                            
+                            {/* PASSA A FUNÇÃO para o GoalProgressList */}
+                            <GoalProgressList 
+                                goals={goals} 
+                                onAddFundsClick={openAddFundsModal} // <<<< PROP ADICIONADA AQUI
+                            /> 
                         
                         </div> {/* Fim da Sidebar */}
 

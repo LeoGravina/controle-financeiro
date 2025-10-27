@@ -1,8 +1,8 @@
 // ATUALIZADO: src/components/GoalProgressList.jsx
 // - Adicionada prop onAddFundsClick.
 // - Adicionado botão "Contribuir" que chama onAddFundsClick.
+// - Layout ajustado para o botão.
 import React from 'react';
-// import { FaBullseye } from 'react-icons/fa'; // Ícone opcional
 
 // Função auxiliar para cor da barra
 const getGoalProgressBarColor = (percentage) => {
@@ -25,7 +25,7 @@ const GoalProgressList = ({ goals = [], onAddFundsClick }) => {
         );
     }
 
-    // Função para evitar que o clique no botão propague (se a linha se tornar clicável no futuro)
+    // Função para evitar que o clique no botão propague
     const handleButtonClick = (e) => {
         e.stopPropagation(); 
     }
@@ -45,17 +45,21 @@ const GoalProgressList = ({ goals = [], onAddFundsClick }) => {
 
                         return (
                             <li key={goal.id} className={`goal-progress-item ${isComplete ? 'complete' : ''}`}>
-                                <div className="goal-item-header"> {/* Novo div para nome e botão */}
+                                {/* Div para nome e botão */}
+                                <div className="goal-item-header"> 
                                     <span className="goal-item-name">
                                         {goal.goalName}
                                     </span>
-                                    {/* Botão Contribuir (visível apenas se não completo) */}
+                                    {/* Botão Contribuir (só aparece se não completa) */}
                                     {!isComplete && (
                                         <button 
                                             className="add-to-goal-button" 
                                             onClick={(e) => { 
                                                 handleButtonClick(e); // Impede propagação
-                                                onAddFundsClick(goal); // Chama a função passada pelo Dashboard
+                                                // Verifica se a função foi passada antes de chamar
+                                                if (onAddFundsClick) {
+                                                    onAddFundsClick(goal); // Chama a função do Dashboard
+                                                }
                                             }}
                                             title={`Adicionar valor para ${goal.goalName}`}
                                         >
@@ -63,9 +67,8 @@ const GoalProgressList = ({ goals = [], onAddFundsClick }) => {
                                         </button>
                                     )}
                                 </div>
-                                <div className="goal-item-info">
-                                    {/* Valores e porcentagem movidos para baixo da barra para melhor layout */}
-                                </div>
+                                
+                                {/* Barra de progresso */}
                                 <div className="progress-bar-container goal-progress-bar-container">
                                     <div 
                                         className="progress-bar-fill goal-progress-bar-fill"
@@ -73,7 +76,8 @@ const GoalProgressList = ({ goals = [], onAddFundsClick }) => {
                                     >
                                     </div>
                                 </div>
-                                {/* Valores e porcentagem agora aqui */}
+                                
+                                {/* Div para valores e badge de concluído */}
                                 <div className="goal-item-values-container"> 
                                     <span className={`goal-item-values ${isComplete ? 'complete-text' : ''}`}>
                                         {currentAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / 
