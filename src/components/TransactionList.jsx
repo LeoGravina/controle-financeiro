@@ -60,7 +60,7 @@ const TransactionList = ({ transactions = [], categories = [], onDeleteTransacti
                                 
                                 <div className="transaction-actions" onClick={handleActionClick}>
                                     <button
-                                      className="delete-list-button"
+                                      className="delete-button"
                                       onClick={() => onDeleteTransaction(t.id, 'transaction')}
                                       disabled={t.isFixed}
                                       aria-label={`Excluir transação ${t.description}`}
