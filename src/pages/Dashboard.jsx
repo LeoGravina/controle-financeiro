@@ -1,8 +1,8 @@
 /*
-  Dashboard.jsx ATUALIZADO
-  - handleAddTransaction: Salva 'installmentGroupId' e 'totalAmount' em parcelas.
-  - handleUpdateTransaction: Detecta 'installmentGroupId' e usa writeBatch para 
-    DELETAR parcelas antigas e RECRIAR novas parcelas com valores/datas atualizados.
+  Dashboard.jsx COMPLETO
+  - Inclui 'Edição Inteligente' de parcelas (recria grupo com writeBatch).
+  - Inclui 'Exclusão Inteligente' de parcelas (exclui grupo com writeBatch).
+  - Inclui 'Pagamento Inteligente' (usa ActionModal para 'Pagar esta' ou 'Quitar').
 */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -30,6 +30,8 @@ import BudgetProgressList from '../components/BudgetProgressList';
 import GoalManager from '../components/GoalManager'; 
 import GoalProgressList from '../components/GoalProgressList'; 
 import AddFundsToGoalModal from '../components/AddFundsToGoalModal'; 
+// Importa o novo modal de ação
+import ActionModal from '../components/ActionModal'; 
 
 // Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
@@ -116,7 +118,7 @@ const Dashboard = () => {
     const [descriptionFilter, setDescriptionFilter] = useState('');
     const [categoryFilter, setCategoryFilter] = useState(null); 
     const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]); 
-    const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, id: null, type: null });
+    const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, id: null, type: null, transactionData: null });
     const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
@@ -125,6 +127,8 @@ const Dashboard = () => {
     const [editingFixedExpense, setEditingFixedExpense] = useState(null);
     const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false);
     const [selectedGoal, setSelectedGoal] = useState(null); 
+    // Estado para o Modal de Ação de Pagamento
+    const [paymentActionModal, setPaymentActionModal] = useState({ isOpen: false, transaction: null });
 
     const navigate = useNavigate();
     const transactionListRef = useRef(null);
@@ -215,17 +219,15 @@ const Dashboard = () => {
         if (listElement) { listElement.scrollTop = 0; }
     }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
 
-    // *** ATUALIZADO: handleAddTransaction ***
+    // Funções handle...
     const handleAddTransaction = async (transaction) => {
         if (!user) return; const { isInstallment, installments, ...rest } = transaction;
-        // 'transaction.amount' AQUI É O VALOR TOTAL
         const dataToAdd = { ...rest, userId: user.uid, date: Timestamp.fromDate(transaction.date), isPaid: transaction.isPaid || false };
         try {
             if (isInstallment && transaction.type === 'expense') {
                 if (installments > 1) {
                     const installmentAmount = transaction.amount / installments;
                     const batch = writeBatch(db);
-                    // 1. Gera um ID de grupo único
                     const groupId = doc(collection(db, 'transactions')).id; 
 
                     for (let i = 0; i < installments; i++) {
@@ -235,69 +237,57 @@ const Dashboard = () => {
                         
                         batch.set(newTransactionRef, { 
                             ...dataToAdd, 
-                            amount: installmentAmount, // Valor da parcela
+                            amount: installmentAmount, 
                             description: `${transaction.description} (${i + 1}/${installments})`, 
                             date: Timestamp.fromDate(installmentDate),
-                            // 2. Adiciona os novos campos
                             installmentGroupId: groupId,
-                            totalAmount: transaction.amount // Valor total
+                            totalAmount: transaction.amount 
                         });
                     }
                     await batch.commit();
                 } else {
-                    // Parcela única (1/1)
                     await addDoc(collection(db, 'transactions'), { 
                         ...dataToAdd, 
                         description: `${transaction.description} (1/1)`,
-                        installmentGroupId: doc(collection(db, 'transactions')).id, // ID de grupo mesmo sendo única
+                        installmentGroupId: doc(collection(db, 'transactions')).id, 
                         totalAmount: transaction.amount
                     });
                 }
             } else {
-                // Transação normal (não parcelada)
                 await addDoc(collection(db, 'transactions'), dataToAdd);
             }
         } catch (error) { console.error("Erro Adicionar Transação:", error); }
     };
     
-    // *** REESCRITO: handleUpdateTransaction ***
     const handleUpdateTransaction = async (updatedTransaction) => {
         if (!user || !updatedTransaction.id) return;
 
         // CASO 1: É UMA ATUALIZAÇÃO DE GRUPO DE PARCELAMENTO
-        // (O modal passa o 'amount' como o valor TOTAL)
         if (updatedTransaction.installmentGroupId && updatedTransaction.isInstallment) {
             
             try {
                 const batch = writeBatch(db);
                 
-                // 1. BUSCAR todas as transações do grupo antigo
                 const q = query(collection(db, 'transactions'), 
                             where('userId', '==', user.uid), 
                             where('installmentGroupId', '==', updatedTransaction.installmentGroupId));
                             
                 const querySnapshot = await getDocs(q);
                 
-                let originalStartDate = updatedTransaction.date.toDate(); // Usa a data da transação editada como nova data de início
+                let originalStartDate = updatedTransaction.date.toDate(); 
                 let found = false;
 
-                // 2. DELETAR todas as transações antigas do batch
                 querySnapshot.forEach((doc) => {
-                    // Pega a data da primeira parcela para usar como início
-                    // Atualização: Vamos usar a data que o usuário selecionou no modal como a nova data de início (updatedTransaction.date)
                     if (!found) {
-                        // Se quiséssemos manter a data de início original:
-                        // originalStartDate = doc.data().date.toDate(); 
                         found = true;
                     }
                     batch.delete(doc.ref);
                 });
 
-                // 3. CRIAR as novas transações
-                const newTotalAmount = updatedTransaction.amount; // Este já é o valor total
+                const newTotalAmount = updatedTransaction.amount; 
                 const newInstallments = updatedTransaction.installments;
                 const newInstallmentAmount = newTotalAmount / newInstallments;
-                const newGroupId = updatedTransaction.installmentGroupId; // Reutiliza o mesmo ID de grupo
+                const newGroupId = updatedTransaction.installmentGroupId; 
 
                 for (let i = 0; i < newInstallments; i++) {
                     const installmentDate = new Date(originalStartDate);
@@ -316,12 +306,11 @@ const Dashboard = () => {
                         type: updatedTransaction.type,
                         category: updatedTransaction.category,
                         paymentMethod: updatedTransaction.paymentMethod,
-                        isPaid: updatedTransaction.isPaid || false, // Herda o status de pagamento da transação clicada
+                        isPaid: updatedTransaction.isPaid || false, 
                         installmentGroupId: newGroupId,
                     });
                 }
 
-                // 4. Executar tudo
                 await batch.commit();
                 
                 setIsEditTransactionModalOpen(false);
@@ -341,11 +330,9 @@ const Dashboard = () => {
                     dataToUpdate.date = Timestamp.fromDate(dataToUpdate.date);
                 }
                 
-                // Se o usuário DESMARCOU 'parcelado', remove os campos de grupo
                 if (dataToUpdate.isInstallment === false) { 
                     delete dataToUpdate.installmentGroupId;
                     delete dataToUpdate.totalAmount;
-                    // Limpa a descrição (ex: remove o (1/1))
                     dataToUpdate.description = dataToUpdate.description.replace(/\s*\(\d+\/\d+\)$/, '').trim();
                 }
 
@@ -361,12 +348,66 @@ const Dashboard = () => {
     const handleAddCategory = async (category) => {
         if (!user) return; const existing = categories.find(c => c.name.toLowerCase() === category.name.toLowerCase()); if (existing) { alert("Categoria já existe."); return; } try { await addDoc(collection(db, 'categories'), { ...category, userId: user.uid }); } catch (error) { console.error("Erro Adicionar Categoria:", error); }
     };
+    
     const handleUpdateCategory = async (updatedCategory) => {
         if (!user || !updatedCategory.id) return; const existing = categories.find(c => c.name.toLowerCase() === updatedCategory.name.toLowerCase() && c.id !== updatedCategory.id); if (existing) { alert("Já existe outra categoria com este nome."); return; } const oldCategory = categories.find(c => c.id === updatedCategory.id); const oldName = oldCategory ? oldCategory.name : null; const newName = updatedCategory.name.trim(); if (!oldName || oldName === newName) { try { await updateDoc(doc(db, 'categories', updatedCategory.id), { color: updatedCategory.color }); } catch (error) { console.error("Erro Atualizar Cor Categoria:", error); } setIsEditCategoryModalOpen(false); setEditingCategory(null); return; } try { const batch = writeBatch(db); batch.update(doc(db, 'categories', updatedCategory.id), { name: newName, color: updatedCategory.color }); const q = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('category', '==', oldName)); const querySnapshot = await getDocs(q); querySnapshot.forEach((document) => batch.update(doc(db, 'transactions', document.id), { category: newName })); await batch.commit(); setIsEditCategoryModalOpen(false); setEditingCategory(null); } catch (error) { console.error("Erro Atualizar Categoria & Transações:", error); alert("Erro ao atualizar."); }
     };
+    
     const handleTogglePaidStatus = async (transaction) => {
-        if (transaction.isFixed && !transaction.isPaid) { const realTransaction = { ...transaction }; delete realTransaction.id; delete realTransaction.isFixed; realTransaction.isPaid = true; await handleAddTransaction(realTransaction); } else if (!transaction.isFixed && transaction.id) { try { await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: !transaction.isPaid }); } catch (error) { console.error("Erro Toggle Pago:", error); } }
+        // CASO 1: É O PAGAMENTO DE UMA PARCELA (indo de 'não pago' para 'pago')
+        if (transaction.installmentGroupId && !transaction.isPaid) {
+            setPaymentActionModal({ isOpen: true, transaction: transaction });
+            return; 
+        }
+
+        // CASO 2: LÓGICA ANTIGA (Gasto Fixo, Transação Normal, ou DESMARCAR um pagamento)
+        if (transaction.isFixed && !transaction.isPaid) { 
+            const realTransaction = { ...transaction }; 
+            delete realTransaction.id; 
+            delete realTransaction.isFixed; 
+            realTransaction.isPaid = true; 
+            await handleAddTransaction(realTransaction); 
+        } else if (!transaction.isFixed && transaction.id) { 
+            try { 
+                await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: !transaction.isPaid }); 
+            } catch (error) { 
+                console.error("Erro Toggle Pago:", error); 
+            } 
+        }
     };
+
+    /** Processa a escolha do usuário no modal de pagamento de parcela */
+    const handlePaymentAction = async (actionType, transaction) => {
+        setPaymentActionModal({ isOpen: false, transaction: null });
+        if (!transaction || !transaction.id || !user) return;
+
+        try {
+            if (actionType === 'single') {
+                await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: true });
+            } 
+            else if (actionType === 'all') {
+                const batch = writeBatch(db);
+                
+                const q = query(collection(db, 'transactions'),
+                    where('userId', '==', user.uid),
+                    where('installmentGroupId', '==', transaction.installmentGroupId));
+                
+                const querySnapshot = await getDocs(q);
+                
+                querySnapshot.forEach(doc => {
+                    if (!doc.data().isPaid) {
+                        batch.update(doc.ref, { isPaid: true });
+                    }
+                });
+                
+                await batch.commit();
+            }
+        } catch (error) {
+            console.error("Erro ao processar pagamento de parcela:", error);
+            alert("Erro ao salvar pagamento. Tente novamente.");
+        }
+    };
+    
     const handleDeleteRequest = (id, type) => {
         if (type === 'transaction' && id.startsWith('fixed-')) { alert("Gastos fixos só podem ser removidos na seção 'Gastos Fixos'."); return; } 
         if (type === 'fixedExpense') { handleDeleteFixedExpense(id); return; } 
@@ -375,7 +416,6 @@ const Dashboard = () => {
         setDeleteModalState({ isOpen: true, id, type, transactionData });
     };
     
-    // ATUALIZADO: handleConfirmDelete
     const handleConfirmDelete = async () => {
         const { id, type, transactionData } = deleteModalState; 
         if (!id || !type) return;
@@ -400,7 +440,6 @@ const Dashboard = () => {
             // CASO 1: É UMA EXCLUSÃO DE PARCELAMENTO (NOVO SISTEMA)
             if (type === 'transaction' && transactionData?.installmentGroupId) {
                 const batch = writeBatch(db);
-                // Deleta TODAS as transações do mesmo grupo
                 const q = query(collection(db, 'transactions'), 
                             where('userId', '==', user.uid),
                             where('installmentGroupId', '==', transactionData.installmentGroupId));
@@ -525,7 +564,7 @@ const Dashboard = () => {
 
     return (
         <>
-            <ConfirmationModal isOpen={deleteModalState.isOpen} onClose={() => setDeleteModalState({ isOpen: false, id: null, type: null })} onConfirm={deleteModalState.type === 'fixedExpense' ? handleConfirmDeleteFixedExpense : handleConfirmDelete} message="Esta ação é permanente..." />
+            <ConfirmationModal isOpen={deleteModalState.isOpen} onClose={() => setDeleteModalState({ isOpen: false, id: null, type: null, transactionData: null })} onConfirm={deleteModalState.type === 'fixedExpense' ? handleConfirmDeleteFixedExpense : handleConfirmDelete} message="Esta ação é permanente..." />
             <EditTransactionModal isOpen={isEditTransactionModalOpen} onClose={() => { setIsEditTransactionModalOpen(false); setEditingTransaction(null); }} transaction={editingTransaction} categories={categories} onSave={handleUpdateTransaction} />
             <EditCategoryModal isOpen={isEditCategoryModalOpen} onClose={() => { setIsEditCategoryModalOpen(false); setEditingCategory(null); }} category={editingCategory} onSave={handleUpdateCategory} />
             <EditFixedExpenseModal isOpen={isEditFixedExpenseModalOpen} onClose={() => { setIsEditFixedExpenseModalOpen(false); setEditingFixedExpense(null); }} expense={editingFixedExpense} categories={categories} onSave={handleUpdateFixedExpense} />
@@ -536,6 +575,33 @@ const Dashboard = () => {
                 goal={selectedGoal}
                 categories={categories} 
                 onSave={handleAddFundsToGoal}
+            />
+
+            {/* Novo Modal de Ação para Pagamento */}
+            <ActionModal
+                isOpen={paymentActionModal.isOpen}
+                onClose={() => setPaymentActionModal({ isOpen: false, transaction: null })}
+                title="Confirmar Pagamento de Parcela"
+                message={`Você está pagando: "${paymentActionModal.transaction?.description || 'parcela'}". Como deseja continuar?`}
+                actions={[
+                    {
+                        label: 'Pagar somente esta',
+                        onClick: () => handlePaymentAction('single', paymentActionModal.transaction),
+                        className: 'confirm', 
+                        style: { backgroundColor: 'var(--primary-color)' } 
+                    },
+                    {
+                        label: 'Quitar (Pagar todas)',
+                        onClick: () => handlePaymentAction('all', paymentActionModal.transaction),
+                        className: 'confirm', 
+                        style: { backgroundColor: 'var(--income-color)' } 
+                    },
+                    {
+                        label: 'Cancelar',
+                        onClick: () => setPaymentActionModal({ isOpen: false, transaction: null }),
+                        className: 'cancel' 
+                    }
+                ]}
             />
 
             <div className="dashboard-container">
