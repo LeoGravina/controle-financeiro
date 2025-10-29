@@ -1,31 +1,35 @@
-// COMPLETO: src/components/GoalManager.jsx
-// - Layout do formulário usa flex-direction column.
-// - Botão excluir usa '×' e classe 'delete-button'.
-import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, onSnapshot, addDoc, Timestamp, deleteDoc, doc } from 'firebase/firestore'; 
+// ATUALIZADO: src/components/GoalManager.jsx
+// - Adiciona funcionalidade de Edição (Modal + updateDoc).
+// - Itens da lista agora são clicáveis.
+import React, { useState, useEffect } from 'react';
+// updateDoc importado
+import { collection, query, where, onSnapshot, addDoc, Timestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore'; 
 import { db, auth } from '../firebase/config';
 import CurrencyInput from './CurrencyInput';
-// import { FaTrash } from 'react-icons/fa'; // Removido
+// Importa o novo modal
+import EditGoalModal from './EditGoalModal'; 
 
 const GoalManager = () => {
     const [goals, setGoals] = useState([]); 
     const [loading, setLoading] = useState(true);
     const [goalName, setGoalName] = useState(''); 
     const [targetAmount, setTargetAmount] = useState(''); 
+    
+    // Estados para o modal de edição
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingGoal, setEditingGoal] = useState(null);
 
     const user = auth.currentUser;
 
-    // Efeito para buscar as metas do usuário em tempo real
+    // Efeito para buscar as metas (sem alteração)
     useEffect(() => {
         if (!user) {
             setGoals([]);
             setLoading(false);
             return;
         }
-
         setLoading(true);
         const q = query(collection(db, 'goals'), where('userId', '==', user.uid));
-
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const fetchedGoals = querySnapshot.docs.map(doc => ({
                 id: doc.id,
@@ -38,20 +42,16 @@ const GoalManager = () => {
             console.error("Erro ao buscar metas:", error);
             setLoading(false);
         });
-
-        // Limpa o listener ao desmontar
         return () => unsubscribe();
-
     }, [user]); 
 
-    // Função para adicionar uma nova meta
+    // Função para adicionar (sem alteração)
     const handleAddGoal = async (e) => {
         e.preventDefault();
         if (!user || !goalName.trim() || targetAmount === '' || parseFloat(targetAmount) <= 0) {
             alert("Preencha o nome e um valor alvo válido para a meta.");
             return;
         }
-
         const newGoal = {
             userId: user.uid,
             goalName: goalName.trim(),
@@ -59,7 +59,6 @@ const GoalManager = () => {
             currentAmount: 0, 
             createdAt: Timestamp.now()
         };
-
         try {
             await addDoc(collection(db, 'goals'), newGoal);
             setGoalName('');
@@ -70,9 +69,9 @@ const GoalManager = () => {
         }
     };
     
-    // Função para deletar uma meta
+    // Função para deletar (sem alteração)
     const handleDeleteGoal = async (e, goalId, goalName) => {
-        e.stopPropagation(); // Impede outros cliques
+        e.stopPropagation(); // Impede outros cliques (agora importante!)
         if (!user || !window.confirm(`Tem certeza que deseja excluir a meta "${goalName}"? Todo o progresso será perdido.`)) {
             return;
         }
@@ -84,6 +83,43 @@ const GoalManager = () => {
         }
     }
 
+    // --- NOVAS FUNÇÕES PARA EDIÇÃO ---
+    
+    // Abre o modal com a meta selecionada
+    const handleEditClick = (goal) => {
+        setEditingGoal(goal);
+        setIsEditModalOpen(true);
+    };
+
+    // Fecha o modal
+    const handleCloseEditModal = () => {
+        setEditingGoal(null);
+        setIsEditModalOpen(false);
+    };
+
+    // Salva as alterações no Firebase
+    const handleUpdateGoal = async (updatedGoal) => {
+        if (!user || !updatedGoal || !updatedGoal.id) {
+            alert("Erro: Meta inválida.");
+            return;
+        }
+        
+        const goalRef = doc(db, 'goals', updatedGoal.id);
+        
+        try {
+            // Atualiza apenas o nome e o valor alvo
+            await updateDoc(goalRef, {
+                goalName: updatedGoal.goalName,
+                targetAmount: updatedGoal.targetAmount
+            });
+            handleCloseEditModal(); // Fecha o modal
+        } catch (error) {
+            console.error("Erro ao atualizar meta:", error);
+            alert("Erro ao salvar as alterações. Tente novamente.");
+        }
+    };
+    // --- FIM DAS NOVAS FUNÇÕES ---
+
 
     if (loading) {
         return <p style={{ padding: '20px', textAlign: 'center' }}>Carregando metas...</p>;
@@ -93,56 +129,72 @@ const GoalManager = () => {
     }
 
     return (
-        <div className="goal-manager"> 
-            <h4>Criar Nova Meta</h4>
-            <form onSubmit={handleAddGoal} className="goal-add-form">
-                <input
-                    type="text"
-                    placeholder="Nome da Meta (ex: Viagem)"
-                    value={goalName}
-                    onChange={(e) => setGoalName(e.target.value)}
-                    required
-                />
-                <CurrencyInput
-                    value={targetAmount}
-                    onChange={setTargetAmount}
-                    placeholder="Valor Alvo (R$)"
-                    required
-                    aria-label="Valor Alvo da Meta"
-                />
-                <button type="submit" className="submit-button goal-add-button">
-                    Criar Meta
-                </button>
-            </form>
+        <>
+            {/* Renderiza o novo modal */}
+            <EditGoalModal 
+                isOpen={isEditModalOpen}
+                onClose={handleCloseEditModal}
+                goal={editingGoal}
+                onSave={handleUpdateGoal}
+            />
 
-            <h4 style={{ marginTop: '30px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-                Minhas Metas
-            </h4>
-            {goals.length === 0 ? (
-                <p className="empty-message">Você ainda não criou nenhuma meta.</p>
-            ) : (
-                <ul className="goal-list">
-                    {goals.map(goal => (
-                        <li key={goal.id} className="goal-list-item">
-                           <div className="goal-info">
-                             <span className="goal-name">{goal.goalName}</span>
-                             <small className="goal-target-amount">
-                                Alvo: {goal.targetAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                             </small>
-                           </div>
-                           <button 
-                                onClick={(e) => handleDeleteGoal(e, goal.id, goal.goalName)} 
-                                // Classe unificada 'delete-button'
-                                className="delete-button action-button goal-delete-button" 
-                                title={`Excluir meta ${goal.goalName}`}
-                           >
-                             × 
-                           </button>
-                        </li>
-                    ))}
-                </ul>
-            )}
-        </div>
+            <div className="goal-manager"> 
+                <h4>Criar Nova Meta</h4>
+                <form onSubmit={handleAddGoal} className="goal-add-form">
+                    {/* ... (Formulário de adicionar sem alteração) ... */}
+                    <input
+                        type="text"
+                        placeholder="Nome da Meta (ex: Viagem)"
+                        value={goalName}
+                        onChange={(e) => setGoalName(e.target.value)}
+                        required
+                    />
+                    <CurrencyInput
+                        value={targetAmount}
+                        onChange={setTargetAmount}
+                        placeholder="Valor Alvo (R$)"
+                        required
+                        aria-label="Valor Alvo da Meta"
+                    />
+                    <button type="submit" className="submit-button goal-add-button">
+                        Criar Meta
+                    </button>
+                </form>
+
+                <h4 style={{ marginTop: '30px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+                    Minhas Metas
+                </h4>
+                {goals.length === 0 ? (
+                    <p className="empty-message">Você ainda não criou nenhuma meta.</p>
+                ) : (
+                    <ul className="goal-list">
+                        {goals.map(goal => (
+                            <li 
+                                key={goal.id} 
+                                className="goal-list-item"
+                                // Adiciona o clique para editar
+                                onClick={() => handleEditClick(goal)}
+                                title={`Editar meta ${goal.goalName}`}
+                            >
+                               <div className="goal-info">
+                                 <span className="goal-name">{goal.goalName}</span>
+                                 <small className="goal-target-amount">
+                                    Alvo: {goal.targetAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                 </small>
+                               </div>
+                               <button 
+                                    onClick={(e) => handleDeleteGoal(e, goal.id, goal.goalName)} 
+                                    className="delete-button action-button goal-delete-button" 
+                                    title={`Excluir meta ${goal.goalName}`}
+                               >
+                                 × 
+                               </button>
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+        </>
     );
 };
 

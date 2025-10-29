@@ -1,9 +1,7 @@
 /*
-  Dashboard.jsx COMPLETO E FINAL
-  - Inclui 'Edição Inteligente' de parcelas (recria grupo com writeBatch).
-  - Inclui 'Exclusão Inteligente' de parcelas (exclui grupo com writeBatch).
-  - Inclui 'Pagamento Inteligente' (usa ActionModal para 'Pagar esta' ou 'Quitar').
-  - Inclui 'Resgate de Metas' (cria Ganho e subtrai da meta).
+  Dashboard.jsx ATUALIZADO
+  - Passa o estado 'budgets' (que já é em tempo real) como prop para o BudgetManager.
+  - 'handleUpdateCategory' atualiza 'transactions' E 'budgets'.
 */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -111,7 +109,7 @@ const Dashboard = () => {
     const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
     const [fixedExpenses, setFixedExpenses] = useState([]);
-    const [budgets, setBudgets] = useState([]); 
+    const [budgets, setBudgets] = useState([]); // <-- ESTE ESTADO É A FONTE DA VERDADE
     const [goals, setGoals] = useState([]); 
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [loading, setLoading] = useState(true); 
@@ -181,18 +179,25 @@ const Dashboard = () => {
         
         const unsubFixedExpenses = onSnapshot(query(collection(db, 'fixedExpenses'), where('userId', '==', user.uid)), (snap) => { 
             if (listenersActive) { setFixedExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() }))); dataLoaded.fixedExpenses = true; checkLoadingDone(); }
-        }, err => console.error("Erro Fixed:", err));
+        }, err => { console.error("Erro Fixed:", err); if (listenersActive) setLoading(false); });
         
+        // Listener onSnapshot para Orçamentos (do mês atual)
         const month = currentMonth.getMonth();
         const year = currentMonth.getFullYear();
         const budgetQuery = query(collection(db, 'budgets'), where('userId', '==', user.uid), where('month', '==', month), where('year', '==', year) );
         const unsubBudgets = onSnapshot(budgetQuery, (snap) => {
-             if (listenersActive) { setBudgets(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))); dataLoaded.budgets = true; checkLoadingDone(); }
+             if (listenersActive) { 
+                // AQUI ATUALIZA O ESTADO 'budgets' EM TEMPO REAL
+                setBudgets(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))); 
+                dataLoaded.budgets = true; 
+                checkLoadingDone(); 
+            }
         }, (error) => {
             console.error("Erro ao buscar orçamentos (onSnapshot):", error);
             if (listenersActive) { setBudgets([]); dataLoaded.budgets = true; checkLoadingDone(); }
         });
 
+        // Listener onSnapshot para Metas (todas do usuário)
         const goalsQuery = query(collection(db, 'goals'), where('userId', '==', user.uid));
         const unsubGoals = onSnapshot(goalsQuery, (snap) => {
             if (listenersActive) {
@@ -354,8 +359,75 @@ const Dashboard = () => {
         if (!user) return; const existing = categories.find(c => c.name.toLowerCase() === category.name.toLowerCase()); if (existing) { alert("Categoria já existe."); return; } try { await addDoc(collection(db, 'categories'), { ...category, userId: user.uid }); } catch (error) { console.error("Erro Adicionar Categoria:", error); }
     };
     
+    // *** ESTA É A VERSÃO CORRIGIDA ***
     const handleUpdateCategory = async (updatedCategory) => {
-        if (!user || !updatedCategory.id) return; const existing = categories.find(c => c.name.toLowerCase() === updatedCategory.name.toLowerCase() && c.id !== updatedCategory.id); if (existing) { alert("Já existe outra categoria com este nome."); return; } const oldCategory = categories.find(c => c.id === updatedCategory.id); const oldName = oldCategory ? oldCategory.name : null; const newName = updatedCategory.name.trim(); if (!oldName || oldName === newName) { try { await updateDoc(doc(db, 'categories', updatedCategory.id), { color: updatedCategory.color }); } catch (error) { console.error("Erro Atualizar Cor Categoria:", error); } setIsEditCategoryModalOpen(false); setEditingCategory(null); return; } try { const batch = writeBatch(db); batch.update(doc(db, 'categories', updatedCategory.id), { name: newName, color: updatedCategory.color }); const q = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('category', '==', oldName)); const querySnapshot = await getDocs(q); querySnapshot.forEach((document) => batch.update(doc(db, 'transactions', document.id), { category: newName })); await batch.commit(); setIsEditCategoryModalOpen(false); setEditingCategory(null); } catch (error) { console.error("Erro Atualizar Categoria & Transações:", error); alert("Erro ao atualizar."); }
+        if (!user || !updatedCategory.id) return;
+        
+        // 1. Verifica se já existe uma categoria com o novo nome
+        const existing = categories.find(c => c.name.toLowerCase() === updatedCategory.name.toLowerCase() && c.id !== updatedCategory.id);
+        if (existing) {
+            alert("Já existe outra categoria com este nome.");
+            return;
+        }
+
+        const oldCategory = categories.find(c => c.id === updatedCategory.id);
+        const oldName = oldCategory ? oldCategory.name : null;
+        const newName = updatedCategory.name.trim();
+
+        // 2. Se o nome não mudou (só a cor), atualiza só a categoria
+        if (!oldName || oldName === newName) {
+            try {
+                await updateDoc(doc(db, 'categories', updatedCategory.id), { color: updatedCategory.color });
+            } catch (error) {
+                console.error("Erro Atualizar Cor Categoria:", error);
+            }
+            setIsEditCategoryModalOpen(false);
+            setEditingCategory(null);
+            return; 
+        }
+
+        // 3. Se o nome MUDOU, atualiza tudo (Categorias, Transações e Orçamentos)
+        try {
+            const batch = writeBatch(db);
+            
+            // A. Atualiza o documento da própria categoria
+            batch.update(doc(db, 'categories', updatedCategory.id), { name: newName, color: updatedCategory.color });
+            
+            // B. Cria a query para achar Transações com o nome antigo
+            const qTransactions = query(collection(db, 'transactions'), 
+                                    where('userId', '==', user.uid), 
+                                    where('category', '==', oldName));
+            
+            // C. Cria a query para achar Orçamentos com o nome antigo
+            const qBudgets = query(collection(db, 'budgets'),
+                                 where('userId', '==', user.uid),
+                                 where('categoryName', '==', oldName));
+
+            // D. Executa as duas buscas em paralelo
+            const [transactionsSnapshot, budgetsSnapshot] = await Promise.all([
+                getDocs(qTransactions),
+                getDocs(qBudgets)
+            ]);
+
+            // E. Adiciona as atualizações de Transações ao batch
+            transactionsSnapshot.forEach((document) => {
+                batch.update(doc(db, 'transactions', document.id), { category: newName });
+            });
+            
+            // F. Adiciona as atualizações de Orçamentos ao batch
+            budgetsSnapshot.forEach((document) => {
+                batch.update(doc(db, 'budgets', document.id), { categoryName: newName });
+            });
+
+            // G. Executa o batch
+            await batch.commit();
+            
+            setIsEditCategoryModalOpen(false);
+            setEditingCategory(null);
+        } catch (error) {
+            console.error("Erro ao atualizar Categoria, Transações e Orçamentos:", error);
+            alert("Erro ao atualizar.");
+        }
     };
     
     const handleTogglePaidStatus = async (transaction) => {
@@ -619,6 +691,7 @@ const Dashboard = () => {
 
     return (
         <>
+            {/* --- RENDERIZAÇÃO DE TODOS OS MODAIS --- */}
             <ConfirmationModal isOpen={deleteModalState.isOpen} onClose={() => setDeleteModalState({ isOpen: false, id: null, type: null, transactionData: null })} onConfirm={deleteModalState.type === 'fixedExpense' ? handleConfirmDeleteFixedExpense : handleConfirmDelete} message="Esta ação é permanente..." />
             <EditTransactionModal isOpen={isEditTransactionModalOpen} onClose={() => { setIsEditTransactionModalOpen(false); setEditingTransaction(null); }} transaction={editingTransaction} categories={categories} onSave={handleUpdateTransaction} />
             <EditCategoryModal isOpen={isEditCategoryModalOpen} onClose={() => { setIsEditCategoryModalOpen(false); setEditingCategory(null); }} category={editingCategory} onSave={handleUpdateCategory} />
@@ -666,6 +739,7 @@ const Dashboard = () => {
                 ]}
             />
 
+            {/* --- LAYOUT PRINCIPAL DO DASHBOARD --- */}
             <div className="dashboard-container">
                 <header>
                     <h1>Meu Dashboard</h1>
@@ -693,11 +767,20 @@ const Dashboard = () => {
                             <div className="sidebar-content-container">
                                 {sidebarTab === 'transaction' && ( <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} /> )}
                                 {sidebarTab === 'fixed' && ( <FixedExpensesManager categories={categories} onAddFixedExpense={handleAddFixedExpense} fixedExpenses={fixedExpenses} onDeleteFixedExpense={handleDeleteFixedExpense} onEditFixedExpense={openEditFixedExpenseModal} /> )}
-                                {sidebarTab === 'budget' && ( <BudgetManager categories={categories} currentMonth={currentMonth} /> )}
+                                {sidebarTab === 'budget' && ( 
+                                    <BudgetManager 
+                                        categories={categories} 
+                                        currentMonth={currentMonth} 
+                                        // AQUI ESTÁ A CORREÇÃO:
+                                        budgets={budgets} // Passa o estado "ao vivo"
+                                    /> 
+                                )}
                                 {sidebarTab === 'goal' && ( <GoalManager /> )} 
                             </div>
 
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
+                            
+                            {/* Este componente agora recebe a prop 'budgets' correta */}
                             <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
                             
                             <GoalProgressList 
