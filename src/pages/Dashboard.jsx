@@ -1,15 +1,16 @@
 /*
-  Dashboard.jsx COMPLETO
+  Dashboard.jsx COMPLETO E FINAL
   - Inclui 'Edição Inteligente' de parcelas (recria grupo com writeBatch).
   - Inclui 'Exclusão Inteligente' de parcelas (exclui grupo com writeBatch).
   - Inclui 'Pagamento Inteligente' (usa ActionModal para 'Pagar esta' ou 'Quitar').
+  - Inclui 'Resgate de Metas' (cria Ganho e subtrai da meta).
 */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { FaThumbtack } from 'react-icons/fa';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-// getDocs e increment importados
+// increment e getDocs importados
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, writeBatch, getDocs, increment } from 'firebase/firestore'; 
 import { auth, db } from '../firebase/config';
 import Select from 'react-select'; 
@@ -30,8 +31,10 @@ import BudgetProgressList from '../components/BudgetProgressList';
 import GoalManager from '../components/GoalManager'; 
 import GoalProgressList from '../components/GoalProgressList'; 
 import AddFundsToGoalModal from '../components/AddFundsToGoalModal'; 
-// Importa o novo modal de ação
+// Importa o modal de Ação (para Pagamento)
 import ActionModal from '../components/ActionModal'; 
+// Importa o modal de Resgate (para Metas)
+import WithdrawFromGoalModal from '../components/WithdrawFromGoalModal'; 
 
 // Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
@@ -125,9 +128,11 @@ const Dashboard = () => {
     const [editingCategory, setEditingCategory] = useState(null);
     const [isEditFixedExpenseModalOpen, setIsEditFixedExpenseModalOpen] = useState(false);
     const [editingFixedExpense, setEditingFixedExpense] = useState(null);
+    // Estados dos Modais de Metas
     const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false);
+    const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false); 
     const [selectedGoal, setSelectedGoal] = useState(null); 
-    // Estado para o Modal de Ação de Pagamento
+    // Estado do Modal de Ação de Pagamento
     const [paymentActionModal, setPaymentActionModal] = useState({ isOpen: false, transaction: null });
 
     const navigate = useNavigate();
@@ -494,6 +499,9 @@ const Dashboard = () => {
         const newFilter = typeFilterOptions.find(opt => opt.value === filterValue) || typeFilterOptions[0]; if (typeFilter.value === filterValue) { setTypeFilter(typeFilterOptions[0]); } else { setTypeFilter(newFilter); } transactionListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     const handleChartClick = (type) => { navigate('/report', { state: { reportType: type, reportMonth: currentMonth } }); };
+
+    
+    // --- Funções de Modal de Metas (Adicionar) ---
     const openAddFundsModal = (goal) => {
         setSelectedGoal(goal);
         setIsAddFundsModalOpen(true);
@@ -531,6 +539,53 @@ const Dashboard = () => {
         batch.set(newTransactionRef, newTransactionData);
         await batch.commit();
     };
+
+    // --- Funções de Modal de Metas (Resgatar) ---
+    const openWithdrawModal = (goal) => {
+        setSelectedGoal(goal);
+        setIsWithdrawModalOpen(true);
+    };
+    const closeWithdrawModal = () => {
+        setSelectedGoal(null);
+        setIsWithdrawModalOpen(false);
+    };
+    
+    /** Função que Resgata Fundos (Subtrai da Meta + Cria Ganho) */
+    const handleWithdrawFromGoal = async (goal, amount, paymentMethod) => {
+        if (!user || !goal || amount <= 0 || amount > goal.currentAmount || !paymentMethod) {
+            throw new Error("Dados inválidos para resgatar fundos.");
+        }
+
+        const metaCategory = categories.find(c => c.name.toLowerCase() === 'metas');
+        if (!metaCategory) {
+            throw new Error("Erro: Categoria 'Metas' não encontrada. Por favor, crie uma categoria chamada 'Metas' para registrar este resgate.");
+        }
+
+        const batch = writeBatch(db);
+        
+        const goalRef = doc(db, 'goals', goal.id);
+        batch.update(goalRef, {
+            currentAmount: increment(-amount) 
+        });
+
+        const newTransactionRef = doc(collection(db, 'transactions'));
+        const newTransactionData = {
+            userId: user.uid,
+            description: `Resgate da Meta: ${goal.goalName}`,
+            amount: amount,
+            date: Timestamp.now(), 
+            type: 'income', 
+            category: metaCategory.name, 
+            paymentMethod: paymentMethod, 
+            isPaid: true, 
+            isInstallment: false,
+            installments: 1,
+        };
+        batch.set(newTransactionRef, newTransactionData);
+
+        await batch.commit();
+    };
+
 
     // --- LÓGICA PRINCIPAL E CÁLCULOS ---
     const allTransactionsForMonth = useMemo(() => {
@@ -576,8 +631,15 @@ const Dashboard = () => {
                 categories={categories} 
                 onSave={handleAddFundsToGoal}
             />
+            
+            <WithdrawFromGoalModal 
+                isOpen={isWithdrawModalOpen}
+                onClose={closeWithdrawModal}
+                goal={selectedGoal}
+                categories={categories} 
+                onSave={handleWithdrawFromGoal}
+            />
 
-            {/* Novo Modal de Ação para Pagamento */}
             <ActionModal
                 isOpen={paymentActionModal.isOpen}
                 onClose={() => setPaymentActionModal({ isOpen: false, transaction: null })}
@@ -641,6 +703,7 @@ const Dashboard = () => {
                             <GoalProgressList 
                                 goals={goals} 
                                 onAddFundsClick={openAddFundsModal} 
+                                onWithdrawFundsClick={openWithdrawModal}
                             /> 
                         
                         </div> {/* Fim da Sidebar */}
