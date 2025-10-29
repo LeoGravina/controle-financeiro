@@ -18,7 +18,6 @@ const paymentMethodOptions = [
     { value: 'pix', label: 'Pix' }
 ];
 
-// 1. NOVO ARRAY COM OPÇÕES DE TIPO
 const typeOptions = [
     { value: 'expense', label: 'Despesa' },
     { value: 'income', label: 'Ganho' }
@@ -43,24 +42,36 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
 
     useEffect(() => {
         if (transaction) {
-            setDescription(transaction.description || '');
-            setAmount(transaction.amount || '');
+            // Define campos padrão
             setDate(formatDateForInput(transaction.date));
             setType(transaction.type || 'expense');
-            // Encontra o objeto { value, label }
             const currentCategory = categoryOptions.find(opt => opt.label === transaction.category);
             setCategory(currentCategory || null);
             const currentPayment = paymentMethodOptions.find(opt => opt.value === transaction.paymentMethod);
             setPaymentMethod(currentPayment || null);
             
+            // Lógica para descrição, valor e parcelamento
             const installmentMatch = transaction.description?.match(/\((\d+)\/(\d+)\)$/);
+            
             if (installmentMatch) {
+                // É um parcelamento (novo ou antigo)
                 setIsInstallment(true);
                 setInstallments(parseInt(installmentMatch[2], 10));
                 setDescription(transaction.description.replace(/\s*\(\d+\/\d+\)$/, '').trim());
+
+                if (transaction.installmentGroupId && transaction.totalAmount) {
+                    // PARCELAMENTO NOVO: Carrega o VALOR TOTAL
+                    setAmount(transaction.totalAmount);
+                } else {
+                    // PARCELAMENTO ANTIGO: Carrega o valor da parcela (não permite edição em grupo)
+                    setAmount(transaction.amount || '');
+                }
             } else {
+                // NÃO É PARCELAMENTO
                 setIsInstallment(transaction.isInstallment || false);
                 setInstallments(transaction.installments || 2);
+                setDescription(transaction.description || '');
+                setAmount(transaction.amount || '');
             }
         }
     }, [transaction, categoryOptions]);
@@ -76,15 +87,16 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
         const selectedPaymentMethod = paymentMethod ? paymentMethod.value : '';
 
         const updatedTransaction = {
-            ...transaction,
+            ...transaction, // Mantém o ID e o installmentGroupId original
             description: description.trim(),
-            amount: parseFloat(amount),
+            amount: parseFloat(amount), // Este agora é o VALOR TOTAL se for parcelado
             date: Timestamp.fromDate(new Date(date + 'T12:00:00')),
             type,
             category: selectedCategoryName,
             paymentMethod: selectedPaymentMethod,
             isInstallment: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment,
             installments: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment ? installments : 1,
+            // installmentGroupId já está incluído via "...transaction"
         };
         delete updatedTransaction.isFixed;
         onSave(updatedTransaction);
@@ -94,13 +106,11 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
 
     const handleContentClick = (e) => e.stopPropagation();
 
-    // 2. Encontra o objeto {value, label} para o tipo atual
     const currentTypeOption = typeOptions.find(opt => opt.value === type);
 
     return (
         <div className="modal-overlay open" onClick={onClose}>
             <div className="modal-content" onClick={handleContentClick}>
-                {/* *** CABEÇALHO DO MODAL *** */}
                 <div className="form-container-header" style={{ marginBottom: '20px' }}>
                     <h4>Editar Transação</h4>
                     <div className="form-date-picker">
@@ -112,7 +122,6 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
                 <form onSubmit={handleSubmit} className="auth-form" style={{ gap: '15px' }}>
                     <input type="text" placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} required />
                     
-                    {/* *** Linha Valor + Pagamento *** */}
                     <div className="form-row">
                         <CurrencyInput value={amount} onChange={setAmount} />
                         <Select
@@ -125,7 +134,6 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
                         />
                     </div>
                     
-                    {/* Categoria em linha cheia */}
                     <Select
                         options={categoryOptions}
                         value={category}
@@ -135,7 +143,6 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
                         classNamePrefix="react-select"
                     />
 
-                    {/* 3. SUBSTITUÍDO o <select> por <Select> */}
                     <Select
                         options={typeOptions}
                         value={currentTypeOption}
@@ -144,6 +151,7 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
                         classNamePrefix="react-select"
                     />
 
+                    {/* Lógica de parcelamento não muda visualmente */}
                     {type === 'expense' && ['credit', 'debit', 'pix'].includes(paymentMethod?.value) && (
                         <div className="installment-section">
                             <label>

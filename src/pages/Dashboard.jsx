@@ -1,16 +1,15 @@
 /*
-  Dashboard.jsx COMPLETO E FINAL (COM CATEGORIAS PADRÃO E CONTRIBUIÇÃO DE METAS)
-  - Adiciona 'createDefaultCategories' para criar 'Metas' e outras categorias padrão para novos usuários.
-  - Corrige erro 'onAddFundsClick is not a function' passando a prop correta.
-  - Implementa 'AddFundsToGoalModal' e a lógica 'handleAddFundsToGoal'.
-  - 'handleAddFundsToGoal' usa 'increment' e 'writeBatch' para atualizar meta e criar transação.
+  Dashboard.jsx ATUALIZADO
+  - handleAddTransaction: Salva 'installmentGroupId' e 'totalAmount' em parcelas.
+  - handleUpdateTransaction: Detecta 'installmentGroupId' e usa writeBatch para 
+    DELETAR parcelas antigas e RECRIAR novas parcelas com valores/datas atualizados.
 */
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { FaThumbtack } from 'react-icons/fa';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-// increment e getDocs importados
+// getDocs e increment importados
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, writeBatch, getDocs, increment } from 'firebase/firestore'; 
 import { auth, db } from '../firebase/config';
 import Select from 'react-select'; 
@@ -30,7 +29,6 @@ import BudgetManager from '../components/BudgetManager';
 import BudgetProgressList from '../components/BudgetProgressList'; 
 import GoalManager from '../components/GoalManager'; 
 import GoalProgressList from '../components/GoalProgressList'; 
-// IMPORTA O NOVO MODAL
 import AddFundsToGoalModal from '../components/AddFundsToGoalModal'; 
 
 // Tooltip Personalizado
@@ -125,7 +123,6 @@ const Dashboard = () => {
     const [editingCategory, setEditingCategory] = useState(null);
     const [isEditFixedExpenseModalOpen, setIsEditFixedExpenseModalOpen] = useState(false);
     const [editingFixedExpense, setEditingFixedExpense] = useState(null);
-    // Estados para o Modal de Metas
     const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false);
     const [selectedGoal, setSelectedGoal] = useState(null); 
 
@@ -158,12 +155,9 @@ const Dashboard = () => {
         // Listener de Categorias (com criação de Padrão)
         const unsubCategories = onSnapshot(query(collection(db, 'categories'), where('userId', '==', user.uid)), async (snap) => { 
             if (listenersActive) {
-                // Verifica se o usuário é novo (não tem categorias)
                 if (snap.empty) {
                     console.log("Usuário sem categorias, criando padrões...");
                     await createDefaultCategories(user.uid);
-                    // O listener vai disparar de novo automaticamente com as novas categorias,
-                    // então não precisamos 'setCategories' aqui.
                 } else {
                     setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
                 }
@@ -180,7 +174,6 @@ const Dashboard = () => {
             if (listenersActive) { setFixedExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() }))); dataLoaded.fixedExpenses = true; checkLoadingDone(); }
         }, err => console.error("Erro Fixed:", err));
         
-        // Listener onSnapshot para Orçamentos (do mês atual)
         const month = currentMonth.getMonth();
         const year = currentMonth.getFullYear();
         const budgetQuery = query(collection(db, 'budgets'), where('userId', '==', user.uid), where('month', '==', month), where('year', '==', year) );
@@ -191,7 +184,6 @@ const Dashboard = () => {
             if (listenersActive) { setBudgets([]); dataLoaded.budgets = true; checkLoadingDone(); }
         });
 
-        // Listener onSnapshot para Metas (todas do usuário)
         const goalsQuery = query(collection(db, 'goals'), where('userId', '==', user.uid));
         const unsubGoals = onSnapshot(goalsQuery, (snap) => {
             if (listenersActive) {
@@ -223,33 +215,149 @@ const Dashboard = () => {
         if (listElement) { listElement.scrollTop = 0; }
     }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
 
-    // Funções handle...
+    // *** ATUALIZADO: handleAddTransaction ***
     const handleAddTransaction = async (transaction) => {
         if (!user) return; const { isInstallment, installments, ...rest } = transaction;
+        // 'transaction.amount' AQUI É O VALOR TOTAL
         const dataToAdd = { ...rest, userId: user.uid, date: Timestamp.fromDate(transaction.date), isPaid: transaction.isPaid || false };
         try {
             if (isInstallment && transaction.type === 'expense') {
                 if (installments > 1) {
                     const installmentAmount = transaction.amount / installments;
                     const batch = writeBatch(db);
+                    // 1. Gera um ID de grupo único
+                    const groupId = doc(collection(db, 'transactions')).id; 
+
                     for (let i = 0; i < installments; i++) {
                         const installmentDate = new Date(transaction.date); installmentDate.setMonth(installmentDate.getMonth() + i);
                         if (installmentDate.getDate() !== transaction.date.getDate()) installmentDate.setDate(0);
                         const newTransactionRef = doc(collection(db, 'transactions'));
-                        batch.set(newTransactionRef, { ...dataToAdd, amount: installmentAmount, description: `${transaction.description} (${i + 1}/${installments})`, date: Timestamp.fromDate(installmentDate) });
+                        
+                        batch.set(newTransactionRef, { 
+                            ...dataToAdd, 
+                            amount: installmentAmount, // Valor da parcela
+                            description: `${transaction.description} (${i + 1}/${installments})`, 
+                            date: Timestamp.fromDate(installmentDate),
+                            // 2. Adiciona os novos campos
+                            installmentGroupId: groupId,
+                            totalAmount: transaction.amount // Valor total
+                        });
                     }
                     await batch.commit();
                 } else {
-                    await addDoc(collection(db, 'transactions'), { ...dataToAdd, description: `${transaction.description} (1/1)` });
+                    // Parcela única (1/1)
+                    await addDoc(collection(db, 'transactions'), { 
+                        ...dataToAdd, 
+                        description: `${transaction.description} (1/1)`,
+                        installmentGroupId: doc(collection(db, 'transactions')).id, // ID de grupo mesmo sendo única
+                        totalAmount: transaction.amount
+                    });
                 }
             } else {
+                // Transação normal (não parcelada)
                 await addDoc(collection(db, 'transactions'), dataToAdd);
             }
         } catch (error) { console.error("Erro Adicionar Transação:", error); }
     };
+    
+    // *** REESCRITO: handleUpdateTransaction ***
     const handleUpdateTransaction = async (updatedTransaction) => {
-        if (!user || !updatedTransaction.id) return; try { const { id, ...dataToUpdate } = updatedTransaction; if (dataToUpdate.date instanceof Date) dataToUpdate.date = Timestamp.fromDate(dataToUpdate.date); await updateDoc(doc(db, 'transactions', id), dataToUpdate); setIsEditTransactionModalOpen(false); setEditingTransaction(null); } catch (error) { console.error("Erro Atualizar Transação:", error); }
+        if (!user || !updatedTransaction.id) return;
+
+        // CASO 1: É UMA ATUALIZAÇÃO DE GRUPO DE PARCELAMENTO
+        // (O modal passa o 'amount' como o valor TOTAL)
+        if (updatedTransaction.installmentGroupId && updatedTransaction.isInstallment) {
+            
+            try {
+                const batch = writeBatch(db);
+                
+                // 1. BUSCAR todas as transações do grupo antigo
+                const q = query(collection(db, 'transactions'), 
+                            where('userId', '==', user.uid), 
+                            where('installmentGroupId', '==', updatedTransaction.installmentGroupId));
+                            
+                const querySnapshot = await getDocs(q);
+                
+                let originalStartDate = updatedTransaction.date.toDate(); // Usa a data da transação editada como nova data de início
+                let found = false;
+
+                // 2. DELETAR todas as transações antigas do batch
+                querySnapshot.forEach((doc) => {
+                    // Pega a data da primeira parcela para usar como início
+                    // Atualização: Vamos usar a data que o usuário selecionou no modal como a nova data de início (updatedTransaction.date)
+                    if (!found) {
+                        // Se quiséssemos manter a data de início original:
+                        // originalStartDate = doc.data().date.toDate(); 
+                        found = true;
+                    }
+                    batch.delete(doc.ref);
+                });
+
+                // 3. CRIAR as novas transações
+                const newTotalAmount = updatedTransaction.amount; // Este já é o valor total
+                const newInstallments = updatedTransaction.installments;
+                const newInstallmentAmount = newTotalAmount / newInstallments;
+                const newGroupId = updatedTransaction.installmentGroupId; // Reutiliza o mesmo ID de grupo
+
+                for (let i = 0; i < newInstallments; i++) {
+                    const installmentDate = new Date(originalStartDate);
+                    installmentDate.setMonth(installmentDate.getMonth() + i);
+                    if (installmentDate.getDate() !== originalStartDate.getDate()) {
+                        installmentDate.setDate(0);
+                    }
+
+                    const newTransactionRef = doc(collection(db, 'transactions'));
+                    batch.set(newTransactionRef, {
+                        userId: user.uid,
+                        description: `${updatedTransaction.description} (${i + 1}/${newInstallments})`,
+                        amount: newInstallmentAmount,
+                        totalAmount: newTotalAmount,
+                        date: Timestamp.fromDate(installmentDate),
+                        type: updatedTransaction.type,
+                        category: updatedTransaction.category,
+                        paymentMethod: updatedTransaction.paymentMethod,
+                        isPaid: updatedTransaction.isPaid || false, // Herda o status de pagamento da transação clicada
+                        installmentGroupId: newGroupId,
+                    });
+                }
+
+                // 4. Executar tudo
+                await batch.commit();
+                
+                setIsEditTransactionModalOpen(false);
+                setEditingTransaction(null);
+
+            } catch (error) {
+                console.error("Erro ao atualizar grupo de parcelas:", error);
+                alert("Erro ao salvar as parcelas. Tente novamente.");
+            }
+
+        } else {
+            // CASO 2: Lógica antiga (atualização de transação única)
+            try {
+                const { id, ...dataToUpdate } = updatedTransaction;
+                
+                if (dataToUpdate.date instanceof Date) {
+                    dataToUpdate.date = Timestamp.fromDate(dataToUpdate.date);
+                }
+                
+                // Se o usuário DESMARCOU 'parcelado', remove os campos de grupo
+                if (dataToUpdate.isInstallment === false) { 
+                    delete dataToUpdate.installmentGroupId;
+                    delete dataToUpdate.totalAmount;
+                    // Limpa a descrição (ex: remove o (1/1))
+                    dataToUpdate.description = dataToUpdate.description.replace(/\s*\(\d+\/\d+\)$/, '').trim();
+                }
+
+                await updateDoc(doc(db, 'transactions', id), dataToUpdate);
+                setIsEditTransactionModalOpen(false);
+                setEditingTransaction(null);
+            } catch (error) {
+                console.error("Erro Atualizar Transação (única):", error);
+            }
+        }
     };
+
     const handleAddCategory = async (category) => {
         if (!user) return; const existing = categories.find(c => c.name.toLowerCase() === category.name.toLowerCase()); if (existing) { alert("Categoria já existe."); return; } try { await addDoc(collection(db, 'categories'), { ...category, userId: user.uid }); } catch (error) { console.error("Erro Adicionar Categoria:", error); }
     };
@@ -260,83 +368,73 @@ const Dashboard = () => {
         if (transaction.isFixed && !transaction.isPaid) { const realTransaction = { ...transaction }; delete realTransaction.id; delete realTransaction.isFixed; realTransaction.isPaid = true; await handleAddTransaction(realTransaction); } else if (!transaction.isFixed && transaction.id) { try { await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: !transaction.isPaid }); } catch (error) { console.error("Erro Toggle Pago:", error); } }
     };
     const handleDeleteRequest = (id, type) => {
-        if (type === 'transaction' && id.startsWith('fixed-')) { 
-            alert("Gastos fixos só podem ser removidos na seção 'Gastos Fixos'."); 
-            return; 
-        } 
-        if (type === 'fixedExpense') { 
-            handleDeleteFixedExpense(id); 
-            return; 
-        } 
-        
+        if (type === 'transaction' && id.startsWith('fixed-')) { alert("Gastos fixos só podem ser removidos na seção 'Gastos Fixos'."); return; } 
+        if (type === 'fixedExpense') { handleDeleteFixedExpense(id); return; } 
         let transactionData = null;
-        if (type === 'transaction') {
-            // Pega os dados da transação ANTES de abrir o modal
-            transactionData = transactions.find(t => t.id === id) || null;
-        }
-        
-        // Salva os dados da transação no estado do modal
+        if (type === 'transaction') { transactionData = transactions.find(t => t.id === id) || null; }
         setDeleteModalState({ isOpen: true, id, type, transactionData });
     };
+    
     // ATUALIZADO: handleConfirmDelete
     const handleConfirmDelete = async () => {
-        // Pega os dados completos do estado, incluindo transactionData
         const { id, type, transactionData } = deleteModalState; 
         if (!id || !type) return;
 
-        // Lógica de UI otimista (permanece a mesma)
         const collectionName = type === 'transaction' ? 'transactions' : 'categories';
         const stateSetter = type ==='transaction' ? setTransactions : setCategories;
         const originalState = type === 'transaction' ? [...transactions] : [...categories];
         
-        // Limpa o estado do modal
         setDeleteModalState({ isOpen: false, id: null, type: null, transactionData: null }); 
         
-        // Trava de segurança para categoria "Metas"
         if (type === 'category') {
              const categoryToDelete = categories.find(c => c.id === id);
              if (categoryToDelete?.name.toLowerCase() === 'metas') {
                  alert("Não é possível excluir a categoria 'Metas', pois ela é essencial para a funcionalidade de Metas.");
-                 return; // Aborta a exclusão
+                 return; 
              }
         }
         
-        // Atualização otimista da UI
         stateSetter(prev => prev.filter(item => item.id !== id));
 
         try {
-            // Lógica de exclusão no backend
-            
-            // CASO 1: É uma contribuição de meta (precisa de batch)
-            if (type === 'transaction' && transactionData?.description?.startsWith('Contribuição para Meta:')) {
-                
+            // CASO 1: É UMA EXCLUSÃO DE PARCELAMENTO (NOVO SISTEMA)
+            if (type === 'transaction' && transactionData?.installmentGroupId) {
+                const batch = writeBatch(db);
+                // Deleta TODAS as transações do mesmo grupo
+                const q = query(collection(db, 'transactions'), 
+                            where('userId', '==', user.uid),
+                            where('installmentGroupId', '==', transactionData.installmentGroupId));
+                const querySnapshot = await getDocs(q);
+                querySnapshot.forEach((doc) => {
+                    batch.delete(doc.ref);
+                });
+                await batch.commit();
+            }
+            // CASO 2: É UMA CONTRIBUIÇÃO DE META
+            else if (type === 'transaction' && transactionData?.description?.startsWith('Contribuição para Meta:')) {
                 const goalName = transactionData.description.replace('Contribuição para Meta: ', '').trim();
                 const goalToUpdate = goals.find(g => g.goalName === goalName);
-                
                 const batch = writeBatch(db);
                 const txRef = doc(db, 'transactions', id);
-                batch.delete(txRef); // 1. Deleta a transação
-
-                // 2. Se a meta ainda existir, reverte (subtrai) o valor
+                batch.delete(txRef); 
                 if (goalToUpdate) {
                     const goalRef = doc(db, 'goals', goalToUpdate.id);
-                    batch.update(goalRef, { 
-                        currentAmount: increment(-transactionData.amount) // Usa increment() com valor negativo
-                    });
+                    batch.update(goalRef, { currentAmount: increment(-transactionData.amount) });
                 }
-                await batch.commit(); // Executa as duas operações
-            
-            // CASO 2: É uma exclusão normal (transação, categoria, etc.)
-            } else {
+                await batch.commit(); 
+            }
+            // CASO 3: É UMA EXCLUSÃO NORMAL (transação única, categoria)
+            else {
                 await deleteDoc(doc(db, collectionName, id));
             }
             
         } catch (error) {
             console.error(`Erro ao Deletar ${type}:`, error);
-            stateSetter(originalState); // Reverte a UI em caso de erro
+            stateSetter(originalState); 
             alert(`Erro ao excluir.`);
         }
     };
+    
     const handleAddFixedExpense = async (expense) => {
         if (!user) return; try { await addDoc(collection(db, 'fixedExpenses'), { ...expense, userId: user.uid }); } catch (error) { console.error("Erro Adicionar Gasto Fixo:", error); }
     };
@@ -357,8 +455,6 @@ const Dashboard = () => {
         const newFilter = typeFilterOptions.find(opt => opt.value === filterValue) || typeFilterOptions[0]; if (typeFilter.value === filterValue) { setTypeFilter(typeFilterOptions[0]); } else { setTypeFilter(newFilter); } transactionListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
     const handleChartClick = (type) => { navigate('/report', { state: { reportType: type, reportMonth: currentMonth } }); };
-
-    // Funções para o Modal de Adicionar Fundos
     const openAddFundsModal = (goal) => {
         setSelectedGoal(goal);
         setIsAddFundsModalOpen(true);
@@ -367,47 +463,34 @@ const Dashboard = () => {
         setSelectedGoal(null);
         setIsAddFundsModalOpen(false);
     };
-    
-    // Função que Salva a Contribuição (Atualiza Meta + Cria Transação)
     const handleAddFundsToGoal = async (goal, amount, paymentMethod) => {
         if (!user || !goal || amount <= 0 || !paymentMethod) {
             throw new Error("Dados inválidos para adicionar fundos.");
         }
-
-        // Procura a categoria "Metas" (agora será criada por padrão)
         const metaCategory = categories.find(c => c.name.toLowerCase() === 'metas');
         if (!metaCategory) {
-            // Este erro agora só deve acontecer se o usuário deletar a categoria padrão
             throw new Error("Erro: Categoria 'Metas' não encontrada. Por favor, crie uma categoria chamada 'Metas' para registrar esta contribuição.");
         }
-
         const batch = writeBatch(db);
-        
-        // 1. Atualiza a meta (incrementa o valor)
         const goalRef = doc(db, 'goals', goal.id);
         batch.update(goalRef, {
-            currentAmount: increment(amount) // 'increment' é do 'firebase/firestore'
+            currentAmount: increment(amount) 
         });
-
-        // 2. Cria uma nova transação de GASTO para justificar a saída do dinheiro
         const newTransactionRef = doc(collection(db, 'transactions'));
         const newTransactionData = {
             userId: user.uid,
             description: `Contribuição para Meta: ${goal.goalName}`,
             amount: amount,
-            date: Timestamp.now(), // Usa a data atual
-            type: 'expense', // É um gasto
-            category: metaCategory.name, // Categoria "Metas"
+            date: Timestamp.now(), 
+            type: 'expense', 
+            category: metaCategory.name, 
             paymentMethod: paymentMethod,
-            isPaid: true, // Contribuição é sempre "paga"
+            isPaid: true, 
             isInstallment: false,
             installments: 1,
         };
         batch.set(newTransactionRef, newTransactionData);
-
-        // 3. Executa ambas as operações
         await batch.commit();
-        // onSnapshot vai atualizar a UI
     };
 
     // --- LÓGICA PRINCIPAL E CÁLCULOS ---
@@ -447,12 +530,11 @@ const Dashboard = () => {
             <EditCategoryModal isOpen={isEditCategoryModalOpen} onClose={() => { setIsEditCategoryModalOpen(false); setEditingCategory(null); }} category={editingCategory} onSave={handleUpdateCategory} />
             <EditFixedExpenseModal isOpen={isEditFixedExpenseModalOpen} onClose={() => { setIsEditFixedExpenseModalOpen(false); setEditingFixedExpense(null); }} expense={editingFixedExpense} categories={categories} onSave={handleUpdateFixedExpense} />
             
-            {/* RENDERIZA O MODAL DE ADICIONAR FUNDOS */}
             <AddFundsToGoalModal 
                 isOpen={isAddFundsModalOpen}
                 onClose={closeAddFundsModal}
                 goal={selectedGoal}
-                categories={categories} // Passa categorias para o modal
+                categories={categories} 
                 onSave={handleAddFundsToGoal}
             />
 
@@ -490,10 +572,9 @@ const Dashboard = () => {
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
                             <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
                             
-                            {/* PASSA A FUNÇÃO para o GoalProgressList */}
                             <GoalProgressList 
                                 goals={goals} 
-                                onAddFundsClick={openAddFundsModal} // <<<< PROP ADICIONADA AQUI
+                                onAddFundsClick={openAddFundsModal} 
                             /> 
                         
                         </div> {/* Fim da Sidebar */}
