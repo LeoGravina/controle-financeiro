@@ -228,7 +228,8 @@ input:focus, .currency-input:focus,
 .fixed-expense-list li:hover .delete-button,
 .goal-list-item:hover .delete-button,
 .list-container li:hover .delete-button, /* .delete-list-button unificado */
-.list-container li:hover .delete-list-button /* Mantém regra antiga p/ garantir */
+.list-container li:hover .delete-list-button, /* Mantém regra antiga p/ garantir */
+.budget-list li:hover .delete-button /* Garante visibilidade no BudgetManager */
  { 
   opacity: 0.6; 
 }
@@ -279,13 +280,23 @@ input:focus, .currency-input:focus,
 .list-container li { display: flex; align-items: center; gap: 10px; padding: 15px; border-bottom: 1px solid var(--border-color); background-color: #ffffff; transition: background-color var(--transition-fast); border-left: 5px solid transparent; }
 .list-container li:last-child { border-bottom: none; }
 .transaction-clickable-area { flex-grow: 1; display: flex; align-items: center; gap: 10px; cursor: pointer; }
-.list-container li:hover { background-color: #f8f9fa; }
-.list-container li.income-row { background-color: var(--income-bg-light); border-left-color: var(--income-color); } .list-container li.income-row:hover { background-color: #d1f2eb; }
-.list-container li.unpaid-expense-row { background-color: var(--expense-bg-light); border-left-color: var(--expense-color); } .list-container li.unpaid-expense-row:hover { background-color: #fbd7d7; }
+/* Remove hover e cursor pointer se for readOnly */
+.list-container li .transaction-clickable-area[style*="cursor: default"] { cursor: default; }
+.list-container li:has(.transaction-clickable-area[style*="cursor: default"]):hover { background-color: #ffffff; } /* Impede hover visual se não clicável */
+.list-container li:not(:has(.transaction-clickable-area[style*="cursor: default"])):hover { background-color: #f8f9fa; } /* Permite hover se clicável */
+
+.list-container li.income-row { background-color: var(--income-bg-light); border-left-color: var(--income-color); } 
+.list-container li.income-row:not(:has(.transaction-clickable-area[style*="cursor: default"])):hover { background-color: #d1f2eb; }
+.list-container li.unpaid-expense-row { background-color: var(--expense-bg-light); border-left-color: var(--expense-color); } 
+.list-container li.unpaid-expense-row:not(:has(.transaction-clickable-area[style*="cursor: default"])):hover { background-color: #fbd7d7; }
 .list-container li.paid-expense-row { background-color: var(--primary-light); border-left-color: #a5b4fc; opacity: 0.8; }
 .list-container li.paid-expense-row .transaction-details, .list-container li.paid-expense-row .transaction-amount { opacity: 0.7; }
-.list-container li.paid-expense-row:hover { background-color: #e0e7ff; opacity: 1; }
+.list-container li.paid-expense-row:not(:has(.transaction-clickable-area[style*="cursor: default"])):hover { background-color: #e0e7ff; opacity: 1; }
 .paid-status-toggle { position: relative; width: 20px; height: 20px; cursor: pointer; flex-shrink: 0; }
+.paid-status-toggle input:disabled { cursor: not-allowed; } /* Cursor para checkbox desabilitado */
+.paid-status-toggle input:disabled ~ .checkmark { background-color: #e9ecef !important; border-color: #ced4da !important; opacity: 0.5; } /* Estilo do checkmark desabilitado */
+.paid-status-toggle input:disabled ~ .checkmark:after { display: none !important; } /* Esconde o "tick" se desabilitado */
+
 .paid-status-toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer; }
 .paid-status-toggle .checkmark { position: absolute; inset: 0; background-color: #e9ecef; border: 1px solid #ced4da; border-radius: 5px; transition: all var(--transition-fast); }
 .paid-status-toggle input:checked ~ .checkmark { background-color: var(--primary-color); border-color: var(--primary-color); }
@@ -299,7 +310,6 @@ input:focus, .currency-input:focus,
 .transaction-amount { font-weight: 600; font-size: 1rem; margin-left: auto; white-space: nowrap; text-align: right; }
 .transaction-amount.income { color: var(--income-color); } .transaction-amount.expense { color: var(--expense-color); }
 .transaction-actions { display: flex; gap: 5px; }
-/* .delete-list-button (Removido, agora coberto por .delete-button) */
 .transaction-details .fixed-expense-icon { color: var(--primary-color); margin-right: 6px; font-size: 0.8em; vertical-align: middle; }
 
 /* === GRÁFICOS === */
@@ -332,11 +342,18 @@ input:focus, .currency-input:focus,
 [data-tooltip]::after {
   content: ''; position: absolute; left: 50%; transform: translateX(-50%); 
   bottom: calc(100% + 5px); border-width: 5px; border-style: solid;
-  border-color: transparent transparent #333 transparent; 
+  border-color: #333 transparent transparent transparent; /* Corrigido para seta apontar para cima */
+  transform: translateX(-50%) rotate(180deg); /* Gira a seta */
 }
+
+/* Remove tooltip se o atributo estiver vazio (útil para desabilitar condicionalmente) */
+[data-tooltip=""]::before, [data-tooltip=""]::after {
+    display: none !important;
+}
+
 [data-tooltip]:hover::before, [data-tooltip]:hover::after { opacity: 1; visibility: visible; }
 .paid-status-toggle[data-tooltip]::before { top: 50%; bottom: auto; left: 115%; transform: translateY(-50%); }
-.paid-status-toggle[data-tooltip]::after { top: 50%; bottom: auto; left: calc(115% - 5px); border-color: transparent #333 transparent transparent; transform: translateY(-50%); }
+.paid-status-toggle[data-tooltip]::after { top: 50%; bottom: auto; left: calc(115% - 5px); border-color: transparent #333 transparent transparent; transform: translateY(-50%) rotate(0deg); /* Reseta rotação para seta lateral */ }
 
 .chart-item h4 { margin-top: 0; margin-bottom: 20px; text-align: center; font-size: 1.1rem; font-weight: 600; color: var(--text-color); }
 .charts-container .recharts-wrapper { font-size: 12px; }
@@ -381,6 +398,15 @@ input:focus, .currency-input:focus,
 .edit-category-inline-form .edit-category-color-picker { width: 45px; height: 45px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); padding: 0; cursor: pointer; flex-shrink: 0; background-color: transparent; appearance: none; -webkit-appearance: none; }
 .edit-category-inline-form .edit-category-color-picker::-webkit-color-swatch-wrapper { padding: 0; }
 .edit-category-inline-form .edit-category-color-picker::-webkit-color-swatch { border: none; border-radius: var(--border-radius-sm); }
+/* Novo estilo para o ActionModal (botões empilhados) */
+.modal-actions-stacked {
+  flex-direction: column;
+  align-items: stretch; /* Faz os botões terem largura total */
+  justify-content: flex-start; /* Alinha no início */
+}
+.modal-actions-stacked .modal-button {
+    width: 100%; /* Garante largura total */
+}
 
 /* === INÍCIO: ESTILOS MELHORADOS DA PÁGINA DE RELATÓRIO === */
 .card-style { background: var(--card-bg-color); padding: 30px; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); }
@@ -520,7 +546,7 @@ input:focus, .currency-input:focus,
 /* === INÍCIO: ESTILOS GOAL MANAGER === */
 .goal-manager { padding: 25px 30px; }
 .goal-manager h4 { font-size: 1.1rem; font-weight: 600; color: var(--text-color); margin-top: 0; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color); }
-/* Formulário de Adicionar Meta - CORRIGIDO */
+/* Formulário de Adicionar Meta */
 .goal-add-form {
   display: flex; /* Muda para Flexbox */
   flex-direction: column; /* Organiza em coluna */
@@ -539,6 +565,13 @@ input:focus, .currency-input:focus,
 .goal-name { font-weight: 500; color: var(--text-color); font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .goal-target-amount { font-size: 0.8rem; color: var(--text-light-color); }
 .goal-delete-button { flex-shrink: 0; } /* Estilos vêm de .delete-button */
+/* Estilos para tornar o item da lista de metas clicável */
+.goal-list-item {
+    cursor: pointer;
+}
+.goal-list-item:hover {
+    background-color: var(--primary-light);
+}
 /* === FIM: ESTILOS GOAL MANAGER === */
 
 /* === INÍCIO: ESTILOS GOAL PROGRESS LIST === */
@@ -556,6 +589,10 @@ input:focus, .currency-input:focus,
 .goal-complete-badge { font-size: 0.75rem; font-weight: 600; color: var(--income-color); }
 .goal-progress-bar-container { width: 100%; height: 10px; background-color: var(--input-bg-color); border-radius: 5px; overflow: hidden; }
 .goal-progress-bar-fill { height: 100%; border-radius: 5px; transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out; }
+.goal-item-actions {
+    display: flex;
+    gap: 8px; /* Espaço entre os botões "Contribuir" e "Resgatar" */
+}
 .add-to-goal-button {
     background-color: var(--primary-light); color: var(--primary-hover);
     border: none; border-radius: var(--border-radius-sm);
@@ -566,21 +603,6 @@ input:focus, .currency-input:focus,
     flex-shrink: 0; 
 }
 .add-to-goal-button:hover { background-color: var(--primary-color); color: white; }
-/* ... (no final da seção .goal-progress-list) ... */
-
-.goal-item-actions {
-    display: flex;
-    gap: 8px; /* Espaço entre os botões "Contribuir" e "Resgatar" */
-}
-
-/* Estilos para tornar o item da lista de metas clicável */
-.goal-list-item {
-    cursor: pointer;
-}
-.goal-list-item:hover {
-    background-color: var(--primary-light);
-}
-
 /* Estilo do novo botão "Resgatar" */
 .withdraw-from-goal-button {
     background-color: var(--expense-bg-light); 
@@ -598,16 +620,112 @@ input:focus, .currency-input:focus,
     background-color: var(--expense-color); 
     color: white; 
 }
-
 /* === FIM: ESTILOS GOAL PROGRESS LIST === */
 
-/* Novo estilo para o ActionModal (botões empilhados) */
-.modal-actions-stacked {
-  flex-direction: column;
-  align-items: stretch; /* Faz os botões terem largura total */
-  justify-content: flex-start; /* Alinha no início */
+/* === INÍCIO: ESTILOS BOTÃO TROCA RELATÓRIO === */
+.report-switch-button-container {
+  display: flex;
+  justify-content: center; /* Centraliza o botão */
+  margin-bottom: 30px; /* Espaço abaixo do botão */
+  margin-top: -15px; /* Puxa um pouco para cima, mais perto do header */
 }
+.report-switch-button {
+  display: inline-flex; /* Para alinhar ícone e texto */
+  align-items: center;
+  padding: 10px 25px;
+  border: none;
+  border-radius: var(--border-radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-std);
+  box-shadow: var(--shadow-sm);
+}
+.report-switch-button svg {
+  font-size: 0.9em; /* Ícone um pouco menor que o texto */
+}
+/* Cores baseadas na classe (oposta ao relatório atual) */
+.report-switch-button.income {
+  background-color: var(--income-bg-light);
+  color: var(--income-color);
+  border: 1px solid var(--income-color);
+}
+.report-switch-button.income:hover {
+  background-color: var(--income-color);
+  color: white;
+  box-shadow: 0 4px 10px rgba(39, 174, 96, 0.3);
+  transform: translateY(-2px);
+}
+.report-switch-button.expense {
+  background-color: var(--expense-bg-light);
+  color: var(--expense-color);
+  border: 1px solid var(--expense-color);
+}
+.report-switch-button.expense:hover {
+  background-color: var(--expense-color);
+  color: white;
+  box-shadow: 0 4px 10px rgba(231, 76, 60, 0.3);
+  transform: translateY(-2px);
+}
+/* Ajuste no botão Voltar para consistência */
+.report-header .report-back-button {
+    background-color: var(--input-bg-color); 
+    color: var(--text-light-color); 
+    border: 1px solid var(--border-color);
+}
+.report-header .report-back-button:hover {
+    background-color: var(--border-color); 
+    color: var(--text-color); 
+    box-shadow: var(--shadow-md);
+}
+/* Ajuste responsivo para o botão de troca */
+@media (max-width: 768px) {
+  .report-switch-button-container {
+    margin-top: 15px; /* Adiciona mais espaço em telas pequenas */
+    margin-bottom: 25px;
+  }
+  .report-switch-button {
+    width: 100%; /* Ocupa largura total */
+    justify-content: center; /* Centraliza conteúdo */
+  }
+}
+/* === FIM: ESTILOS BOTÃO TROCA RELATÓRIO === */
 
-.modal-actions-stacked .modal-button {
-    width: 100%; /* Garante largura total */
+/* ... (Se você adicionou .report-summary-stacked antes, REMOVA essas regras) ... */
+
+.report-summary-grid {
+  display: grid; /* Usa grid layout */
+  grid-template-columns: 1fr 1fr; /* Duas colunas de largura igual por padrão */
+  gap: 30px; /* Espaço entre as colunas e linhas */
+  margin-bottom: 40px; /* Espaço antes da lista de transações */
+  padding: 30px; /* Padding interno do card */
+  /* Herda background, border-radius, box-shadow de .card-style */
 }
+/* Remove padding/sombra/borda dos componentes internos */
+.report-summary-grid .budget-progress-container,
+.report-summary-grid .goal-progress-container {
+    padding: 0;
+    margin-top: 0; 
+    box-shadow: none;
+    border-radius: 0;
+    background-color: transparent; 
+}
+.report-summary-grid .budget-progress-container h4,
+.report-summary-grid .goal-progress-container h4 {
+    margin-top: 0; 
+}
+/* Ajuste responsivo: empilha em telas menores */
+@media (max-width: 992px) { 
+  .report-summary-grid {
+    grid-template-columns: 1fr; /* Uma coluna só */
+    gap: 40px; 
+  }
+}
+@media (max-width: 768px) {
+    .report-summary-grid {
+        gap: 30px; 
+        padding: 20px; 
+        margin-bottom: 30px;
+    }
+}
+/* === FIM: NOVOS ESTILOS PARA GRID DE ORÇAMENTO/META NO RELATÓRIO === */

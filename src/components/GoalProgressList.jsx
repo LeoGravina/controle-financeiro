@@ -1,8 +1,5 @@
 // ATUALIZADO: src/components/GoalProgressList.jsx
-// - CORRIGIDO: Restaurado o código da barra de progresso e dos valores.
-// - Adicionada prop onWithdrawFundsClick.
-// - Adicionado botão "Resgatar" que chama onWithdrawFundsClick.
-// - Adicionado wrapper .goal-item-actions para os botões.
+// - Adicionada prop 'hideActions' para ocultar botões "Contribuir" e "Resgatar".
 import React from 'react';
 
 // Função auxiliar para cor da barra
@@ -12,8 +9,8 @@ const getGoalProgressBarColor = (percentage) => {
     return 'var(--pending-color)'; 
 };
 
-// Adiciona a nova prop onWithdrawFundsClick
-const GoalProgressList = ({ goals = [], onAddFundsClick, onWithdrawFundsClick }) => { 
+// Adiciona a nova prop 'hideActions', default é false
+const GoalProgressList = ({ goals = [], onAddFundsClick, onWithdrawFundsClick, hideActions = false }) => { 
 
     if (goals.length === 0) {
         return (
@@ -52,42 +49,44 @@ const GoalProgressList = ({ goals = [], onAddFundsClick, onWithdrawFundsClick })
                                         {goal.goalName}
                                     </span>
                                     
-                                    {/* Wrapper para os botões de ação */}
-                                    <div className="goal-item-actions">
-                                        {/* Botão Contribuir (só aparece se não completa) */}
-                                        {!isComplete && (
-                                            <button 
-                                                className="add-to-goal-button" 
-                                                onClick={(e) => { 
-                                                    handleButtonClick(e); 
-                                                    if (onAddFundsClick) {
-                                                        onAddFundsClick(goal); 
-                                                    }
-                                                }}
-                                                title={`Adicionar valor para ${goal.goalName}`}
-                                            >
-                                                Contribuir
-                                            </button>
-                                        )}
-                                        {/* Botão Resgatar (só aparece se tiver dinheiro) */}
-                                        {currentAmount > 0 && (
-                                             <button 
-                                                className="withdraw-from-goal-button" 
-                                                onClick={(e) => { 
-                                                    handleButtonClick(e); 
-                                                    if (onWithdrawFundsClick) {
-                                                        onWithdrawFundsClick(goal); 
-                                                    }
-                                                }}
-                                                title={`Resgatar valor de ${goal.goalName}`}
-                                            >
-                                                Resgatar
-                                            </button>
-                                        )}
-                                    </div>
+                                    {/* Renderiza os botões APENAS se hideActions for false */}
+                                    {!hideActions && (
+                                        <div className="goal-item-actions">
+                                            {/* Botão Contribuir (só aparece se não completa) */}
+                                            {!isComplete && (
+                                                <button 
+                                                    className="add-to-goal-button" 
+                                                    onClick={(e) => { 
+                                                        handleButtonClick(e); 
+                                                        if (onAddFundsClick) {
+                                                            onAddFundsClick(goal); 
+                                                        }
+                                                    }}
+                                                    title={`Adicionar valor para ${goal.goalName}`}
+                                                >
+                                                    Contribuir
+                                                </button>
+                                            )}
+                                            {/* Botão Resgatar (só aparece se tiver dinheiro) */}
+                                            {currentAmount > 0 && (
+                                                 <button 
+                                                    className="withdraw-from-goal-button" 
+                                                    onClick={(e) => { 
+                                                        handleButtonClick(e); 
+                                                        if (onWithdrawFundsClick) {
+                                                            onWithdrawFundsClick(goal); 
+                                                        }
+                                                    }}
+                                                    title={`Resgatar valor de ${goal.goalName}`}
+                                                >
+                                                    Resgatar
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                                 
-                                {/* *** CÓDIGO RESTAURADO AQUI *** */}
+                                {/* Barra de progresso */}
                                 <div className="progress-bar-container goal-progress-bar-container">
                                     <div 
                                         className="progress-bar-fill goal-progress-bar-fill"
@@ -96,7 +95,7 @@ const GoalProgressList = ({ goals = [], onAddFundsClick, onWithdrawFundsClick })
                                     </div>
                                 </div>
                                 
-                                {/* *** CÓDIGO RESTAURADO AQUI *** */}
+                                {/* Div para valores e badge de concluído */}
                                 <div className="goal-item-values-container"> 
                                     <span className={`goal-item-values ${isComplete ? 'complete-text' : ''}`}>
                                         {currentAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / 
