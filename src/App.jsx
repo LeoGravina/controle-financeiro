@@ -86,7 +86,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-        {/* 2. Adiciona a nova rota de relatório protegida */}
         <Route
           path="/report"
           element={

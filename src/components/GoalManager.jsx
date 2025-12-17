@@ -1,12 +1,7 @@
-// ATUALIZADO: src/components/GoalManager.jsx
-// - Adiciona funcionalidade de Edição (Modal + updateDoc).
-// - Itens da lista agora são clicáveis.
 import React, { useState, useEffect } from 'react';
-// updateDoc importado
 import { collection, query, where, onSnapshot, addDoc, Timestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore'; 
 import { db, auth } from '../firebase/config';
 import CurrencyInput from './CurrencyInput';
-// Importa o novo modal
 import EditGoalModal from './EditGoalModal'; 
 
 const GoalManager = () => {
@@ -15,13 +10,11 @@ const GoalManager = () => {
     const [goalName, setGoalName] = useState(''); 
     const [targetAmount, setTargetAmount] = useState(''); 
     
-    // Estados para o modal de edição
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingGoal, setEditingGoal] = useState(null);
 
     const user = auth.currentUser;
 
-    // Efeito para buscar as metas (sem alteração)
     useEffect(() => {
         if (!user) {
             setGoals([]);
@@ -45,7 +38,6 @@ const GoalManager = () => {
         return () => unsubscribe();
     }, [user]); 
 
-    // Função para adicionar (sem alteração)
     const handleAddGoal = async (e) => {
         e.preventDefault();
         if (!user || !goalName.trim() || targetAmount === '' || parseFloat(targetAmount) <= 0) {
@@ -69,7 +61,6 @@ const GoalManager = () => {
         }
     };
     
-    // Função para deletar (sem alteração)
     const handleDeleteGoal = async (e, goalId, goalName) => {
         e.stopPropagation(); // Impede outros cliques (agora importante!)
         if (!user || !window.confirm(`Tem certeza que deseja excluir a meta "${goalName}"? Todo o progresso será perdido.`)) {
@@ -83,21 +74,16 @@ const GoalManager = () => {
         }
     }
 
-    // --- NOVAS FUNÇÕES PARA EDIÇÃO ---
-    
-    // Abre o modal com a meta selecionada
     const handleEditClick = (goal) => {
         setEditingGoal(goal);
         setIsEditModalOpen(true);
     };
 
-    // Fecha o modal
     const handleCloseEditModal = () => {
         setEditingGoal(null);
         setIsEditModalOpen(false);
     };
 
-    // Salva as alterações no Firebase
     const handleUpdateGoal = async (updatedGoal) => {
         if (!user || !updatedGoal || !updatedGoal.id) {
             alert("Erro: Meta inválida.");
@@ -107,19 +93,16 @@ const GoalManager = () => {
         const goalRef = doc(db, 'goals', updatedGoal.id);
         
         try {
-            // Atualiza apenas o nome e o valor alvo
             await updateDoc(goalRef, {
                 goalName: updatedGoal.goalName,
                 targetAmount: updatedGoal.targetAmount
             });
-            handleCloseEditModal(); // Fecha o modal
+            handleCloseEditModal(); 
         } catch (error) {
             console.error("Erro ao atualizar meta:", error);
             alert("Erro ao salvar as alterações. Tente novamente.");
         }
     };
-    // --- FIM DAS NOVAS FUNÇÕES ---
-
 
     if (loading) {
         return <p style={{ padding: '20px', textAlign: 'center' }}>Carregando metas...</p>;
@@ -130,7 +113,6 @@ const GoalManager = () => {
 
     return (
         <>
-            {/* Renderiza o novo modal */}
             <EditGoalModal 
                 isOpen={isEditModalOpen}
                 onClose={handleCloseEditModal}
@@ -141,7 +123,6 @@ const GoalManager = () => {
             <div className="goal-manager"> 
                 <h4>Criar Nova Meta</h4>
                 <form onSubmit={handleAddGoal} className="goal-add-form">
-                    {/* ... (Formulário de adicionar sem alteração) ... */}
                     <input
                         type="text"
                         placeholder="Nome da Meta (ex: Viagem)"
@@ -172,7 +153,6 @@ const GoalManager = () => {
                             <li 
                                 key={goal.id} 
                                 className="goal-list-item"
-                                // Adiciona o clique para editar
                                 onClick={() => handleEditClick(goal)}
                                 title={`Editar meta ${goal.goalName}`}
                             >

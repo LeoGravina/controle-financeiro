@@ -1,8 +1,5 @@
-// ATUALIZADO: src/components/TransactionForm.jsx
-// - Removido o ícone FaCalendarAlt do date picker.
 import React, { useState, useEffect, useMemo } from 'react';
 import CurrencyInput from './CurrencyInput';
-// FaCalendarAlt REMOVIDO da importação
 import { FaArrowUp, FaArrowDown } from 'react-icons/fa'; 
 import Select from 'react-select';
 
@@ -69,7 +66,6 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
             <div className="form-container-header">
                 <h3>Adicionar Transação</h3>
                 <div className="form-date-picker">
-                    {/* FaCalendarAlt REMOVIDO DAQUI */}
                     <input 
                         type="date" 
                         value={date} 
@@ -81,8 +77,8 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
             </div>
 
             <div className="type-toggle-container">
-                <button type="button" className={`type-toggle-button income ${type === 'income' ? 'active' : ''}`} onClick={() => setType('income')}> <FaArrowUp /> Ganho </button>
-                <button type="button" className={`type-toggle-button expense ${type === 'expense' ? 'active' : ''}`} onClick={() => setType('expense')}> <FaArrowDown /> Gasto </button>
+                <button type="button" className={`type-toggle-button income ${type === 'income' ? 'active' : ''}`} onClick={() => setType('income')}> <FaArrowUp /> Recebimento </button>
+                <button type="button" className={`type-toggle-button expense ${type === 'expense' ? 'active' : ''}`} onClick={() => setType('expense')}> <FaArrowDown /> Despesa </button>
             </div>
 
             <form onSubmit={handleSubmit} style={{marginTop: '0px'}}>

@@ -1,7 +1,4 @@
-// COMPLETO: src/components/CategoryManager.jsx
-// - Alterado ícone FaTimes para '×'
 import React, { useState } from 'react';
-// import { FaTimes } from 'react-icons/fa'; // Não mais necessário
 
 const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory, onEditCategory }) => {
   const [name, setName] = useState('');
@@ -36,7 +33,7 @@ const CategoryManager = ({ categories = [], onAddCategory, onDeleteCategory, onE
                 {cat.name}
               </div>
               <button className="delete-button action-button" onClick={(e) => handleDeleteClick(e, cat.id)} title={`Excluir ${cat.name}`}>
-                × {/* Alterado de <FaTimes /> para '×' */}
+                × 
               </button>
             </li>
           ))

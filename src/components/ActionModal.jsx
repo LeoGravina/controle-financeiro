@@ -21,19 +21,12 @@ const ActionModal = ({ isOpen, onClose, title, message, actions = [] }) => {
       <div className="modal-content" onClick={handleContentClick}>
         <h4>{title}</h4>
         <p>{message}</p>
-        
-        {/* MUDANÇA AQUI: 
-          - Removemos o style={{ justifyContent: 'flex-start', flexWrap: 'wrap' }}
-          - Adicionamos a classe 'modal-actions-stacked'
-        */}
         <div className="modal-actions modal-actions-stacked"> 
           {actions.map((action, index) => (
             <button
               key={index}
               onClick={action.onClick}
-              // Usa a classe passada (ex: 'confirm', 'cancel', 'danger')
               className={`modal-button ${action.className || 'confirm'}`}
-              // Permite estilos customizados (ex: cores diferentes)
               style={action.style || {}}
               disabled={action.disabled || false}
             >

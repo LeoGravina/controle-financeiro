@@ -1,4 +1,3 @@
-// NOVO ARQUIVO: src/components/EditBudgetModal.jsx
 import React, { useState, useEffect } from 'react';
 import CurrencyInput from './CurrencyInput';
 
@@ -6,7 +5,6 @@ const EditBudgetModal = ({ isOpen, onClose, budget, onSave }) => {
     const [amount, setAmount] = useState('');
 
     useEffect(() => {
-        // Popula o modal com o valor atual do orçamento quando ele é aberto
         if (budget) {
             setAmount(budget.limitAmount || '');
         }
@@ -21,7 +19,6 @@ const EditBudgetModal = ({ isOpen, onClose, budget, onSave }) => {
             return;
         }
 
-        // Envia o objeto 'budget' completo, mas com o 'limitAmount' atualizado
         onSave({ 
             ...budget, 
             limitAmount: newLimitAmount 
@@ -36,7 +33,6 @@ const EditBudgetModal = ({ isOpen, onClose, budget, onSave }) => {
         <div className="modal-overlay open" onClick={onClose}>
             <div className="modal-content" onClick={handleContentClick}>
                 <h4>Editar Orçamento</h4>
-                {/* Mostra o nome da categoria como texto simples */}
                 <p style={{ 
                     marginBottom: '25px', 
                     fontSize: '1.2rem', 

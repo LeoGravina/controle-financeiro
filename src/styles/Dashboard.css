@@ -141,7 +141,6 @@ input:focus, .currency-input:focus,
     box-shadow: none;
 }
 
-
 /* === ESTILOS PARA REACT-SELECT (Formulário e Filtros) === */
 .react-select-container .react-select__control { min-height: 46px; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); background-color: var(--input-bg-color); box-shadow: none; transition: all var(--transition-std); font-size: 0.95rem; }
 .react-select-container .react-select__control--is-focused { border-color: var(--primary-color); box-shadow: none; background-color: #ffffff; }
@@ -728,4 +727,46 @@ input:focus, .currency-input:focus,
         margin-bottom: 30px;
     }
 }
-/* === FIM: NOVOS ESTILOS PARA GRID DE ORÇAMENTO/META NO RELATÓRIO === */
+.paid-status-toggle input {
+    /* Garante que o input invisível fique POR CIMA do visual checkmark para receber o clique */
+    z-index: 2; 
+    cursor: pointer;
+}
+.paid-status-wrapper {
+    /* Garante que o container não colapse */
+    z-index: 5;
+    position: relative;
+    margin-right: 10px;
+}
+
+/* === OTIMIZAÇÃO MOBILE (Adicionado) === */
+@media (max-width: 900px) {
+  /* Layout Base: Empilha sidebar e conteúdo */
+  .main-layout { grid-template-columns: 1fr; gap: 20px; }
+  
+  /* Cards de Resumo em Grade 2x2 */
+  .summary-grid { grid-template-columns: 1fr 1fr; gap: 15px; }
+  .summary-card { padding: 15px; }
+  .summary-card span { font-size: 1.5rem; }
+  .summary-card p { font-size: 0.8rem; }
+  
+  /* Header simplificado */
+  header { flex-direction: column; gap: 15px; text-align: center; }
+  .header-controls { justify-content: center; width: 100%; flex-direction: column-reverse; }
+  .month-navigator { width: 100%; justify-content: space-between; }
+  .signout-button { width: 100%; }
+
+  /* Áreas de toque maiores */
+  input, select, button, .sidebar-tab-button { min-height: 45px; }
+  .delete-button { opacity: 1; /* Ícone visível sempre no mobile */ }
+
+  /* Ajustes de Padding nos cards */
+  .form-container, .list-container, .charts-grid .chart-item, 
+  .category-manager, .fixed-expenses-manager, .budget-manager, 
+  .goal-manager, .budget-progress-container { 
+      padding: 15px; 
+  }
+  
+  /* Ajuste de Modais para ocupar mais tela */
+  .modal-content { max-width: 95%; padding: 20px; }
+}

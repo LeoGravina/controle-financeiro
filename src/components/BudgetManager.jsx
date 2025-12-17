@@ -91,7 +91,6 @@ const BudgetManager = ({ categories = [], currentMonth, budgets = [] }) => {
         }
 
         try {
-            // Apenas adiciona o documento.
             await addDoc(collection(db, 'budgets'), {
                 userId: user.uid,
                 categoryName,
@@ -99,8 +98,6 @@ const BudgetManager = ({ categories = [], currentMonth, budgets = [] }) => {
                 year,
                 limitAmount
             });
-            // 7. REMOVIDO: setBudgets(...)
-            // O onSnapshot do Dashboard vai atualizar a prop
             setSelectedCategoryToAdd(null);
             setAddAmount('');
         } catch (error) {
@@ -109,15 +106,12 @@ const BudgetManager = ({ categories = [], currentMonth, budgets = [] }) => {
         }
     };
 
-    // Função para REMOVER um orçamento
     const handleDeleteBudget = async (e, budgetId, categoryName) => {
         e.stopPropagation(); 
         if (!user || !window.confirm(`Tem certeza que deseja remover o orçamento para "${categoryName}"?`)) return;
 
         try {
             await deleteDoc(doc(db, 'budgets', budgetId));
-            // 8. REMOVIDO: setBudgets(...)
-            // O onSnapshot do Dashboard vai atualizar a prop
         } catch (error) {
             console.error("Erro ao remover orçamento:", error);
             alert("Erro ao remover. Tente novamente.");

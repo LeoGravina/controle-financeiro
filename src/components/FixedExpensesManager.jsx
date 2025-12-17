@@ -1,16 +1,14 @@
-// ATUALIZADO: src/components/FixedExpensesManager.jsx
 import React, { useState, useMemo } from 'react';
 import CurrencyInput from './CurrencyInput';
 import { FaRegTrashAlt } from 'react-icons/fa';
-import Select from 'react-select'; // Importa o react-select
+import Select from 'react-select'; 
 
 const FixedExpensesManager = ({ categories = [], onAddFixedExpense, fixedExpenses = [], onDeleteFixedExpense, onEditFixedExpense }) => {
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState(null); // Alterado para null (para react-select)
+  const [category, setCategory] = useState(null); 
   const [dayOfMonth, setDayOfMonth] = useState(1);
 
-  // Formata e ordena as categorias para o react-select
   const categoryOptions = useMemo(() =>
       categories
           .map(cat => ({ value: cat.id, label: cat.name }))
@@ -20,17 +18,16 @@ const FixedExpensesManager = ({ categories = [], onAddFixedExpense, fixedExpense
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!description.trim() || !amount || !category || !dayOfMonth) { // Verifica se category (objeto) não é null
-      alert("Preencha todos os campos do gasto fixo.");
+    if (!description.trim() || !amount || !category || !dayOfMonth) { 
+      alert("Preencha todos os campos de despesa fixo.");
       return;
     }
     onAddFixedExpense({
       description: description.trim(),
       amount: parseFloat(amount),
-      category: category.label, // Passa o NOME da categoria (label)
+      category: category.label,
       dayOfMonth: parseInt(dayOfMonth, 10),
     });
-    // Limpa o formulário
     setDescription(''); setAmount(''); setCategory(null); setDayOfMonth(1);
   };
 
@@ -41,12 +38,11 @@ const FixedExpensesManager = ({ categories = [], onAddFixedExpense, fixedExpense
 
   return (
     <div className="fixed-expenses-manager">
-      <h3>Gastos Fixos Recorrentes</h3>
+      <h3>Despesas Fixas Recorrentes</h3>
       <form onSubmit={handleSubmit} className="fixed-expense-form">
         <input type="text" placeholder="Descrição (ex: Netflix)" value={description} onChange={e => setDescription(e.target.value)} required />
         <CurrencyInput value={amount} onChange={setAmount} />
         
-        {/* Substituído por react-select */}
         <Select
             options={categoryOptions}
             value={category}
@@ -61,7 +57,7 @@ const FixedExpensesManager = ({ categories = [], onAddFixedExpense, fixedExpense
           <label htmlFor="day">Dia do Vencimento:</label>
           <input id="day" type="number" value={dayOfMonth} onChange={e => setDayOfMonth(e.target.value)} min="1" max="31" required />
         </div>
-        <button type="submit" className="submit-button">Adicionar Gasto Fixo</button>
+        <button type="submit" className="submit-button">Adicionar Despesa Fixa</button>
       </form>
 
       <ul className="fixed-expense-list">
@@ -78,7 +74,7 @@ const FixedExpensesManager = ({ categories = [], onAddFixedExpense, fixedExpense
             </li>
           ))
         ) : (
-          <p className="empty-message" style={{textAlign: "left", padding: "10px 0"}}>Nenhum gasto fixo adicionado.</p>
+          <p className="empty-message" style={{textAlign: "left", padding: "10px 0"}}>Nenhuma despesa fixo adicionado.</p>
         )}
       </ul>
     </div>

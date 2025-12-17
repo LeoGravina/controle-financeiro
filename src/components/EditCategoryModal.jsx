@@ -1,4 +1,3 @@
-// src/components/EditCategoryModal.jsx
 import React, { useState, useEffect } from 'react';
 
 const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
@@ -20,16 +19,14 @@ const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
 
     if (!isOpen || !category) return null;
 
-    // Impedir fechamento ao clicar dentro do modal
     const handleContentClick = (e) => e.stopPropagation();
 
     return (
         <div className="modal-overlay open" onClick={onClose}>
             <div className="modal-content" onClick={handleContentClick}>
                 <h4>Editar Categoria</h4>
-                <form onSubmit={handleSubmit} className="auth-form" style={{ gap: '25px' }}> {/* Aumenta o gap geral */}
+                <form onSubmit={handleSubmit} className="auth-form" style={{ gap: '25px' }}> 
 
-                    {/* *** NOVO: Container Flex para Nome e Cor *** */}
                     <div className="edit-category-inline-form">
                         <input
                             type="text"
@@ -44,11 +41,11 @@ const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
                             value={color}
                             onChange={e => setColor(e.target.value)}
                             aria-label="Cor da categoria"
-                            className="edit-category-color-picker" // Classe para estilização específica
+                            className="edit-category-color-picker" 
                         />
                     </div>
 
-                    <div className="modal-actions" style={{ marginTop: '10px' }}> {/* Reduz margin-top */}
+                    <div className="modal-actions" style={{ marginTop: '10px' }}> 
                         <button type="button" onClick={onClose} className="modal-button cancel">Cancelar</button>
                         <button type="submit" className="modal-button confirm" style={{ backgroundColor: 'var(--primary-color)' }}>Salvar</button>
                     </div>

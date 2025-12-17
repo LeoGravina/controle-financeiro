@@ -1,11 +1,9 @@
-// NOVO ARQUIVO: src/components/AddFundsToGoalModal.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import CurrencyInput from './CurrencyInput'; 
 import Select from 'react-select'; 
 import { db, auth } from '../firebase/config'; 
 import { doc, updateDoc, increment } from 'firebase/firestore'; 
 
-// Opções de pagamento (copiadas do EditTransactionModal)
 const paymentMethodOptions = [
     { value: 'debit', label: 'Débito' },
     { value: 'credit', label: 'Crédito' },
@@ -18,7 +16,6 @@ const AddFundsToGoalModal = ({ isOpen, onClose, goal, categories, onSave }) => {
     const [paymentMethod, setPaymentMethod] = useState(null);
     const [isSaving, setIsSaving] = useState(false); 
 
-    // Limpa o input quando o modal é fechado ou a meta muda
     useEffect(() => {
         if (!isOpen) {
             setAmountToAdd('');
@@ -47,13 +44,10 @@ const AddFundsToGoalModal = ({ isOpen, onClose, goal, categories, onSave }) => {
         setIsSaving(true); 
 
         try {
-            // Chama a função onSave passada pelo Dashboard
-            // Passa o objeto goal completo, o valor, e o 'value' do método de pag.
             await onSave(goal, amount, paymentMethod.value); 
-            onClose(); // Fecha o modal após sucesso
+            onClose();
         } catch (error) {
             console.error("Erro ao adicionar fundos à meta:", error);
-            // Mostra o erro específico, como "Categoria 'Metas' não encontrada."
             alert(error.message || "Ocorreu um erro ao tentar salvar. Tente novamente.");
             setIsSaving(false); 
         } 
@@ -81,7 +75,7 @@ const AddFundsToGoalModal = ({ isOpen, onClose, goal, categories, onSave }) => {
                         placeholder="Valor a adicionar (R$)"
                         aria-label="Valor a adicionar à meta"
                         required
-                        autoFocus // Foca no input ao abrir
+                        autoFocus 
                     />
                     
                     <Select

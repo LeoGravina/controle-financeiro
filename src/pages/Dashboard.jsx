@@ -1,17 +1,13 @@
-/*
-  Dashboard.jsx ATUALIZADO
-  - Passa o estado 'budgets' (que já é em tempo real) como prop para o BudgetManager.
-  - 'handleUpdateCategory' atualiza 'transactions' E 'budgets'.
-*/
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { FaThumbtack } from 'react-icons/fa';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-// increment e getDocs importados
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, Timestamp, updateDoc, writeBatch, getDocs, increment } from 'firebase/firestore'; 
 import { auth, db } from '../firebase/config';
 import Select from 'react-select'; 
+
+// Importação do Hook
+import { useTransactions } from '../hooks/useTransactions'; 
 
 // Importando componentes
 import SummaryCard from '../components/SummaryCard';
@@ -29,12 +25,9 @@ import BudgetProgressList from '../components/BudgetProgressList';
 import GoalManager from '../components/GoalManager'; 
 import GoalProgressList from '../components/GoalProgressList'; 
 import AddFundsToGoalModal from '../components/AddFundsToGoalModal'; 
-// Importa o modal de Ação (para Pagamento)
 import ActionModal from '../components/ActionModal'; 
-// Importa o modal de Resgate (para Metas)
 import WithdrawFromGoalModal from '../components/WithdrawFromGoalModal'; 
 
-// Tooltip Personalizado
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0];
@@ -52,7 +45,6 @@ const CustomTooltip = ({ active, payload }) => {
     return null;
 };
 
-// Função para gerar dados do gráfico
 const generateChartData = (transactions, type, categories) => {
     const filtered = transactions.filter(t => t.type === type);
     const total = filtered.reduce((acc, t) => acc + t.amount, 0);
@@ -68,7 +60,6 @@ const generateChartData = (transactions, type, categories) => {
     });
 };
 
-// Opções para o filtro de tipo
 const typeFilterOptions = [
     { value: 'all', label: 'Tipo (Todos)' },
     { value: 'income', label: 'Ganhos' },
@@ -76,11 +67,10 @@ const typeFilterOptions = [
     { value: 'toPayExpense', label: 'Desp. a Pagar' }
 ];
 
-// Função para criar categorias padrão para novos usuários
 const createDefaultCategories = async (userId) => {
     const batch = writeBatch(db);
     const defaultCategories = [
-        { name: 'Metas', color: '#6a82fb', userId: userId }, // Categoria CRUCIAL
+        { name: 'Metas', color: '#6a82fb', userId: userId },
         { name: 'Alimentação', color: '#f39c12', userId: userId },
         { name: 'Transporte', color: '#3498db', userId: userId },
         { name: 'Lazer', color: '#2ecc71', userId: userId },
@@ -88,31 +78,25 @@ const createDefaultCategories = async (userId) => {
         { name: 'Salário', color: '#1abc9c', userId: userId },
         { name: 'Outros', color: '#bdc3c7', userId: userId }
     ];
-    
     defaultCategories.forEach(cat => {
         const newCatRef = doc(collection(db, 'categories'));
         batch.set(newCatRef, cat);
     });
-    
-    try {
-        await batch.commit();
-        console.log("Categorias padrão criadas com sucesso!");
-    } catch (error) {
-        console.error("Erro ao criar categorias padrão:", error);
-    }
+    try { await batch.commit(); } catch (error) { console.error("Erro ao criar categorias padrão:", error); }
 };
 
-
 const Dashboard = () => {
-    // Estados
     const [user, setUser] = useState(null);
-    const [transactions, setTransactions] = useState([]);
     const [categories, setCategories] = useState([]);
     const [fixedExpenses, setFixedExpenses] = useState([]);
-    const [budgets, setBudgets] = useState([]); // <-- ESTE ESTADO É A FONTE DA VERDADE
+    const [budgets, setBudgets] = useState([]); 
     const [goals, setGoals] = useState([]); 
     const [currentMonth, setCurrentMonth] = useState(new Date());
-    const [loading, setLoading] = useState(true); 
+    const [loadingOtherData, setLoadingOtherData] = useState(true); 
+
+    // Hook Otimizado
+    const { transactions, loading: loadingTransactions } = useTransactions(user, currentMonth);
+
     const [formType, setFormType] = useState('expense');
     const [transactionViewTab, setTransactionViewTab] = useState('monthly');
     const [sidebarTab, setSidebarTab] = useState('transaction'); 
@@ -120,147 +104,96 @@ const Dashboard = () => {
     const [categoryFilter, setCategoryFilter] = useState(null); 
     const [typeFilter, setTypeFilter] = useState(typeFilterOptions[0]); 
     const [deleteModalState, setDeleteModalState] = useState({ isOpen: false, id: null, type: null, transactionData: null });
+    
     const [isEditTransactionModalOpen, setIsEditTransactionModalOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState(null);
     const [isEditCategoryModalOpen, setIsEditCategoryModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [isEditFixedExpenseModalOpen, setIsEditFixedExpenseModalOpen] = useState(false);
     const [editingFixedExpense, setEditingFixedExpense] = useState(null);
-    // Estados dos Modais de Metas
     const [isAddFundsModalOpen, setIsAddFundsModalOpen] = useState(false);
     const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false); 
     const [selectedGoal, setSelectedGoal] = useState(null); 
-    // Estado do Modal de Ação de Pagamento
     const [paymentActionModal, setPaymentActionModal] = useState({ isOpen: false, transaction: null });
 
     const navigate = useNavigate();
     const transactionListRef = useRef(null);
 
-    // Efeito de Autenticação
     useEffect(() => {
         const unsubAuth = onAuthStateChanged(auth, currentUser => setUser(currentUser || null));
         return () => unsubAuth();
     }, []);
 
-    // useEffect para buscar TUDO com onSnapshot
     useEffect(() => {
         if (!user) {
-            setTransactions([]); setCategories([]); setFixedExpenses([]); setBudgets([]); setGoals([]); 
-            setLoading(false); 
+            setCategories([]); setFixedExpenses([]); setBudgets([]); setGoals([]); 
+            setLoadingOtherData(false); 
             return;
         }
-        setLoading(true); 
+        setLoadingOtherData(true); 
         let listenersActive = true;
-        let dataLoaded = { categories: false, transactions: false, fixedExpenses: false, budgets: false, goals: false }; 
-
-        const checkLoadingDone = () => {
-            if (listenersActive && Object.values(dataLoaded).every(status => status === true)) {
-                setLoading(false);
-            }
-        };
-
-        // Listener de Categorias (com criação de Padrão)
+        
         const unsubCategories = onSnapshot(query(collection(db, 'categories'), where('userId', '==', user.uid)), async (snap) => { 
             if (listenersActive) {
-                if (snap.empty) {
-                    console.log("Usuário sem categorias, criando padrões...");
-                    await createDefaultCategories(user.uid);
-                } else {
-                    setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-                }
-                dataLoaded.categories = true; 
-                checkLoadingDone(); 
+                if (snap.empty) { await createDefaultCategories(user.uid); } 
+                else { setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() }))); }
             }
-        }, err => { console.error("Erro Cat:", err); if (listenersActive) setLoading(false); });
-        
-        const unsubTransactions = onSnapshot(query(collection(db, 'transactions'), where('userId', '==', user.uid)), (snap) => {
-            if (listenersActive) { setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data(), date: d.data().date.toDate() }))); dataLoaded.transactions = true; checkLoadingDone(); }
-        }, err => { console.error("Erro Trans:", err); if (listenersActive) setLoading(false); });
+        });
         
         const unsubFixedExpenses = onSnapshot(query(collection(db, 'fixedExpenses'), where('userId', '==', user.uid)), (snap) => { 
-            if (listenersActive) { setFixedExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() }))); dataLoaded.fixedExpenses = true; checkLoadingDone(); }
-        }, err => { console.error("Erro Fixed:", err); if (listenersActive) setLoading(false); });
+            if (listenersActive) setFixedExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        });
         
-        // Listener onSnapshot para Orçamentos (do mês atual)
         const month = currentMonth.getMonth();
         const year = currentMonth.getFullYear();
         const budgetQuery = query(collection(db, 'budgets'), where('userId', '==', user.uid), where('month', '==', month), where('year', '==', year) );
         const unsubBudgets = onSnapshot(budgetQuery, (snap) => {
-             if (listenersActive) { 
-                // AQUI ATUALIZA O ESTADO 'budgets' EM TEMPO REAL
-                setBudgets(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))); 
-                dataLoaded.budgets = true; 
-                checkLoadingDone(); 
-            }
-        }, (error) => {
-            console.error("Erro ao buscar orçamentos (onSnapshot):", error);
-            if (listenersActive) { setBudgets([]); dataLoaded.budgets = true; checkLoadingDone(); }
+             if (listenersActive) setBudgets(snap.docs.map(doc => ({ id: doc.id, ...doc.data() }))); 
         });
 
-        // Listener onSnapshot para Metas (todas do usuário)
         const goalsQuery = query(collection(db, 'goals'), where('userId', '==', user.uid));
         const unsubGoals = onSnapshot(goalsQuery, (snap) => {
             if (listenersActive) {
                 const fetchedGoals = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 fetchedGoals.sort((a, b) => a.goalName.localeCompare(b.goalName)); 
                 setGoals(fetchedGoals);
-                dataLoaded.goals = true; 
-                checkLoadingDone(); 
+                setLoadingOtherData(false); 
             }
-        }, (error) => {
-            console.error("Erro ao buscar metas (onSnapshot):", error);
-             if (listenersActive) { setGoals([]); dataLoaded.goals = true; checkLoadingDone(); }
         });
 
-        // Função de limpeza
         return () => { 
             listenersActive = false; 
-            unsubCategories(); 
-            unsubTransactions(); 
-            unsubFixedExpenses(); 
-            unsubBudgets(); 
-            unsubGoals(); 
+            unsubCategories(); unsubFixedExpenses(); unsubBudgets(); unsubGoals(); 
         };
-    }, [user, currentMonth]); 
+    }, [user, currentMonth]);
 
-    // useEffect para rolar a lista para o topo ao mudar filtros
     useEffect(() => {
         const listElement = transactionListRef.current?.querySelector('ul');
         if (listElement) { listElement.scrollTop = 0; }
     }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
 
-    // Funções handle...
     const handleAddTransaction = async (transaction) => {
         if (!user) return; const { isInstallment, installments, ...rest } = transaction;
         const dataToAdd = { ...rest, userId: user.uid, date: Timestamp.fromDate(transaction.date), isPaid: transaction.isPaid || false };
         try {
             if (isInstallment && transaction.type === 'expense') {
+                const batch = writeBatch(db);
+                const groupId = doc(collection(db, 'transactions')).id; 
+                const installmentAmount = transaction.amount / installments;
                 if (installments > 1) {
-                    const installmentAmount = transaction.amount / installments;
-                    const batch = writeBatch(db);
-                    const groupId = doc(collection(db, 'transactions')).id; 
-
                     for (let i = 0; i < installments; i++) {
                         const installmentDate = new Date(transaction.date); installmentDate.setMonth(installmentDate.getMonth() + i);
                         if (installmentDate.getDate() !== transaction.date.getDate()) installmentDate.setDate(0);
                         const newTransactionRef = doc(collection(db, 'transactions'));
-                        
                         batch.set(newTransactionRef, { 
-                            ...dataToAdd, 
-                            amount: installmentAmount, 
-                            description: `${transaction.description} (${i + 1}/${installments})`, 
-                            date: Timestamp.fromDate(installmentDate),
-                            installmentGroupId: groupId,
-                            totalAmount: transaction.amount 
+                            ...dataToAdd, amount: installmentAmount, description: `${transaction.description} (${i + 1}/${installments})`, 
+                            date: Timestamp.fromDate(installmentDate), installmentGroupId: groupId, totalAmount: transaction.amount 
                         });
                     }
                     await batch.commit();
                 } else {
                     await addDoc(collection(db, 'transactions'), { 
-                        ...dataToAdd, 
-                        description: `${transaction.description} (1/1)`,
-                        installmentGroupId: doc(collection(db, 'transactions')).id, 
-                        totalAmount: transaction.amount
+                        ...dataToAdd, description: `${transaction.description} (1/1)`, installmentGroupId: groupId, totalAmount: transaction.amount
                     });
                 }
             } else {
@@ -271,87 +204,38 @@ const Dashboard = () => {
     
     const handleUpdateTransaction = async (updatedTransaction) => {
         if (!user || !updatedTransaction.id) return;
-
-        // CASO 1: É UMA ATUALIZAÇÃO DE GRUPO DE PARCELAMENTO
         if (updatedTransaction.installmentGroupId && updatedTransaction.isInstallment) {
-            
             try {
                 const batch = writeBatch(db);
-                
-                const q = query(collection(db, 'transactions'), 
-                            where('userId', '==', user.uid), 
-                            where('installmentGroupId', '==', updatedTransaction.installmentGroupId));
-                            
+                const q = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('installmentGroupId', '==', updatedTransaction.installmentGroupId));
                 const querySnapshot = await getDocs(q);
-                
-                let originalStartDate = updatedTransaction.date.toDate(); 
-                let found = false;
-
-                querySnapshot.forEach((doc) => {
-                    if (!found) {
-                        found = true;
-                    }
-                    batch.delete(doc.ref);
-                });
-
+                let originalStartDate = updatedTransaction.date instanceof Date ? updatedTransaction.date : updatedTransaction.date.toDate();
+                querySnapshot.forEach((doc) => { batch.delete(doc.ref); });
                 const newTotalAmount = updatedTransaction.amount; 
                 const newInstallments = updatedTransaction.installments;
                 const newInstallmentAmount = newTotalAmount / newInstallments;
-                const newGroupId = updatedTransaction.installmentGroupId; 
-
                 for (let i = 0; i < newInstallments; i++) {
-                    const installmentDate = new Date(originalStartDate);
-                    installmentDate.setMonth(installmentDate.getMonth() + i);
-                    if (installmentDate.getDate() !== originalStartDate.getDate()) {
-                        installmentDate.setDate(0);
-                    }
-
+                    const installmentDate = new Date(originalStartDate); installmentDate.setMonth(installmentDate.getMonth() + i);
+                    if (installmentDate.getDate() !== originalStartDate.getDate()) installmentDate.setDate(0);
                     const newTransactionRef = doc(collection(db, 'transactions'));
                     batch.set(newTransactionRef, {
-                        userId: user.uid,
-                        description: `${updatedTransaction.description} (${i + 1}/${newInstallments})`,
-                        amount: newInstallmentAmount,
-                        totalAmount: newTotalAmount,
-                        date: Timestamp.fromDate(installmentDate),
-                        type: updatedTransaction.type,
-                        category: updatedTransaction.category,
-                        paymentMethod: updatedTransaction.paymentMethod,
-                        isPaid: updatedTransaction.isPaid || false, 
-                        installmentGroupId: newGroupId,
+                        userId: user.uid, description: `${updatedTransaction.description} (${i + 1}/${newInstallments})`,
+                        amount: newInstallmentAmount, totalAmount: newTotalAmount, date: Timestamp.fromDate(installmentDate),
+                        type: updatedTransaction.type, category: updatedTransaction.category, paymentMethod: updatedTransaction.paymentMethod,
+                        isPaid: updatedTransaction.isPaid || false, installmentGroupId: updatedTransaction.installmentGroupId,
                     });
                 }
-
                 await batch.commit();
-                
-                setIsEditTransactionModalOpen(false);
-                setEditingTransaction(null);
-
-            } catch (error) {
-                console.error("Erro ao atualizar grupo de parcelas:", error);
-                alert("Erro ao salvar as parcelas. Tente novamente.");
-            }
-
+                setIsEditTransactionModalOpen(false); setEditingTransaction(null);
+            } catch (error) { console.error("Erro atualizar grupo:", error); alert("Erro ao salvar parcelas."); }
         } else {
-            // CASO 2: Lógica antiga (atualização de transação única)
             try {
                 const { id, ...dataToUpdate } = updatedTransaction;
-                
-                if (dataToUpdate.date instanceof Date) {
-                    dataToUpdate.date = Timestamp.fromDate(dataToUpdate.date);
-                }
-                
-                if (dataToUpdate.isInstallment === false) { 
-                    delete dataToUpdate.installmentGroupId;
-                    delete dataToUpdate.totalAmount;
-                    dataToUpdate.description = dataToUpdate.description.replace(/\s*\(\d+\/\d+\)$/, '').trim();
-                }
-
+                if (dataToUpdate.date instanceof Date) dataToUpdate.date = Timestamp.fromDate(dataToUpdate.date);
+                if (dataToUpdate.isInstallment === false) { delete dataToUpdate.installmentGroupId; delete dataToUpdate.totalAmount; dataToUpdate.description = dataToUpdate.description.replace(/\s*\(\d+\/\d+\)$/, '').trim(); }
                 await updateDoc(doc(db, 'transactions', id), dataToUpdate);
-                setIsEditTransactionModalOpen(false);
-                setEditingTransaction(null);
-            } catch (error) {
-                console.error("Erro Atualizar Transação (única):", error);
-            }
+                setIsEditTransactionModalOpen(false); setEditingTransaction(null);
+            } catch (error) { console.error("Erro Atualizar Transação:", error); }
         }
     };
 
@@ -359,130 +243,53 @@ const Dashboard = () => {
         if (!user) return; const existing = categories.find(c => c.name.toLowerCase() === category.name.toLowerCase()); if (existing) { alert("Categoria já existe."); return; } try { await addDoc(collection(db, 'categories'), { ...category, userId: user.uid }); } catch (error) { console.error("Erro Adicionar Categoria:", error); }
     };
     
-    // *** ESTA É A VERSÃO CORRIGIDA ***
     const handleUpdateCategory = async (updatedCategory) => {
         if (!user || !updatedCategory.id) return;
-        
-        // 1. Verifica se já existe uma categoria com o novo nome
         const existing = categories.find(c => c.name.toLowerCase() === updatedCategory.name.toLowerCase() && c.id !== updatedCategory.id);
-        if (existing) {
-            alert("Já existe outra categoria com este nome.");
-            return;
-        }
-
+        if (existing) { alert("Já existe outra categoria com este nome."); return; }
         const oldCategory = categories.find(c => c.id === updatedCategory.id);
         const oldName = oldCategory ? oldCategory.name : null;
         const newName = updatedCategory.name.trim();
-
-        // 2. Se o nome não mudou (só a cor), atualiza só a categoria
         if (!oldName || oldName === newName) {
-            try {
-                await updateDoc(doc(db, 'categories', updatedCategory.id), { color: updatedCategory.color });
-            } catch (error) {
-                console.error("Erro Atualizar Cor Categoria:", error);
-            }
-            setIsEditCategoryModalOpen(false);
-            setEditingCategory(null);
-            return; 
+            try { await updateDoc(doc(db, 'categories', updatedCategory.id), { color: updatedCategory.color }); } catch (error) { console.error("Erro cor:", error); }
+            setIsEditCategoryModalOpen(false); setEditingCategory(null); return; 
         }
-
-        // 3. Se o nome MUDOU, atualiza tudo (Categorias, Transações e Orçamentos)
         try {
             const batch = writeBatch(db);
-            
-            // A. Atualiza o documento da própria categoria
             batch.update(doc(db, 'categories', updatedCategory.id), { name: newName, color: updatedCategory.color });
-            
-            // B. Cria a query para achar Transações com o nome antigo
-            const qTransactions = query(collection(db, 'transactions'), 
-                                    where('userId', '==', user.uid), 
-                                    where('category', '==', oldName));
-            
-            // C. Cria a query para achar Orçamentos com o nome antigo
-            const qBudgets = query(collection(db, 'budgets'),
-                                 where('userId', '==', user.uid),
-                                 where('categoryName', '==', oldName));
-
-            // D. Executa as duas buscas em paralelo
-            const [transactionsSnapshot, budgetsSnapshot] = await Promise.all([
-                getDocs(qTransactions),
-                getDocs(qBudgets)
-            ]);
-
-            // E. Adiciona as atualizações de Transações ao batch
-            transactionsSnapshot.forEach((document) => {
-                batch.update(doc(db, 'transactions', document.id), { category: newName });
-            });
-            
-            // F. Adiciona as atualizações de Orçamentos ao batch
-            budgetsSnapshot.forEach((document) => {
-                batch.update(doc(db, 'budgets', document.id), { categoryName: newName });
-            });
-
-            // G. Executa o batch
+            const qTransactions = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('category', '==', oldName));
+            const qBudgets = query(collection(db, 'budgets'), where('userId', '==', user.uid), where('categoryName', '==', oldName));
+            const [transactionsSnapshot, budgetsSnapshot] = await Promise.all([ getDocs(qTransactions), getDocs(qBudgets) ]);
+            transactionsSnapshot.forEach((doc) => { batch.update(doc.ref, { category: newName }); });
+            budgetsSnapshot.forEach((doc) => { batch.update(doc.ref, { categoryName: newName }); });
             await batch.commit();
-            
-            setIsEditCategoryModalOpen(false);
-            setEditingCategory(null);
-        } catch (error) {
-            console.error("Erro ao atualizar Categoria, Transações e Orçamentos:", error);
-            alert("Erro ao atualizar.");
-        }
+            setIsEditCategoryModalOpen(false); setEditingCategory(null);
+        } catch (error) { console.error("Erro update full:", error); alert("Erro ao atualizar."); }
     };
     
     const handleTogglePaidStatus = async (transaction) => {
-        // CASO 1: É O PAGAMENTO DE UMA PARCELA (indo de 'não pago' para 'pago')
-        if (transaction.installmentGroupId && !transaction.isPaid) {
-            setPaymentActionModal({ isOpen: true, transaction: transaction });
-            return; 
-        }
-
-        // CASO 2: LÓGICA ANTIGA (Gasto Fixo, Transação Normal, ou DESMARCAR um pagamento)
+        if (transaction.installmentGroupId && !transaction.isPaid) { setPaymentActionModal({ isOpen: true, transaction: transaction }); return; }
         if (transaction.isFixed && !transaction.isPaid) { 
-            const realTransaction = { ...transaction }; 
-            delete realTransaction.id; 
-            delete realTransaction.isFixed; 
-            realTransaction.isPaid = true; 
+            const realTransaction = { ...transaction }; delete realTransaction.id; delete realTransaction.isFixed; realTransaction.isPaid = true; 
             await handleAddTransaction(realTransaction); 
         } else if (!transaction.isFixed && transaction.id) { 
-            try { 
-                await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: !transaction.isPaid }); 
-            } catch (error) { 
-                console.error("Erro Toggle Pago:", error); 
-            } 
+            try { await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: !transaction.isPaid }); } catch (error) { console.error("Erro Toggle Pago:", error); } 
         }
     };
 
-    /** Processa a escolha do usuário no modal de pagamento de parcela */
     const handlePaymentAction = async (actionType, transaction) => {
         setPaymentActionModal({ isOpen: false, transaction: null });
         if (!transaction || !transaction.id || !user) return;
-
         try {
-            if (actionType === 'single') {
-                await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: true });
-            } 
+            if (actionType === 'single') { await updateDoc(doc(db, 'transactions', transaction.id), { isPaid: true }); } 
             else if (actionType === 'all') {
                 const batch = writeBatch(db);
-                
-                const q = query(collection(db, 'transactions'),
-                    where('userId', '==', user.uid),
-                    where('installmentGroupId', '==', transaction.installmentGroupId));
-                
+                const q = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('installmentGroupId', '==', transaction.installmentGroupId));
                 const querySnapshot = await getDocs(q);
-                
-                querySnapshot.forEach(doc => {
-                    if (!doc.data().isPaid) {
-                        batch.update(doc.ref, { isPaid: true });
-                    }
-                });
-                
+                querySnapshot.forEach(doc => { if (!doc.data().isPaid) batch.update(doc.ref, { isPaid: true }); });
                 await batch.commit();
             }
-        } catch (error) {
-            console.error("Erro ao processar pagamento de parcela:", error);
-            alert("Erro ao salvar pagamento. Tente novamente.");
-        }
+        } catch (error) { console.error("Erro pagamento parcela:", error); alert("Erro ao salvar."); }
     };
     
     const handleDeleteRequest = (id, type) => {
@@ -496,250 +303,150 @@ const Dashboard = () => {
     const handleConfirmDelete = async () => {
         const { id, type, transactionData } = deleteModalState; 
         if (!id || !type) return;
-
         const collectionName = type === 'transaction' ? 'transactions' : 'categories';
-        const stateSetter = type ==='transaction' ? setTransactions : setCategories;
-        const originalState = type === 'transaction' ? [...transactions] : [...categories];
-        
         setDeleteModalState({ isOpen: false, id: null, type: null, transactionData: null }); 
         
         if (type === 'category') {
              const categoryToDelete = categories.find(c => c.id === id);
-             if (categoryToDelete?.name.toLowerCase() === 'metas') {
-                 alert("Não é possível excluir a categoria 'Metas', pois ela é essencial para a funcionalidade de Metas.");
-                 return; 
-             }
+             if (categoryToDelete?.name.toLowerCase() === 'metas') { alert("Não é possível excluir a categoria 'Metas'."); return; }
         }
-        
-        stateSetter(prev => prev.filter(item => item.id !== id));
-
         try {
-            // CASO 1: É UMA EXCLUSÃO DE PARCELAMENTO (NOVO SISTEMA)
             if (type === 'transaction' && transactionData?.installmentGroupId) {
                 const batch = writeBatch(db);
-                const q = query(collection(db, 'transactions'), 
-                            where('userId', '==', user.uid),
-                            where('installmentGroupId', '==', transactionData.installmentGroupId));
+                const q = query(collection(db, 'transactions'), where('userId', '==', user.uid), where('installmentGroupId', '==', transactionData.installmentGroupId));
                 const querySnapshot = await getDocs(q);
-                querySnapshot.forEach((doc) => {
-                    batch.delete(doc.ref);
-                });
+                querySnapshot.forEach((doc) => { batch.delete(doc.ref); });
                 await batch.commit();
             }
-            // CASO 2: É UMA CONTRIBUIÇÃO DE META
             else if (type === 'transaction' && transactionData?.description?.startsWith('Contribuição para Meta:')) {
                 const goalName = transactionData.description.replace('Contribuição para Meta: ', '').trim();
                 const goalToUpdate = goals.find(g => g.goalName === goalName);
                 const batch = writeBatch(db);
-                const txRef = doc(db, 'transactions', id);
-                batch.delete(txRef); 
-                if (goalToUpdate) {
-                    const goalRef = doc(db, 'goals', goalToUpdate.id);
-                    batch.update(goalRef, { currentAmount: increment(-transactionData.amount) });
-                }
+                batch.delete(doc(db, 'transactions', id)); 
+                if (goalToUpdate) { batch.update(doc(db, 'goals', goalToUpdate.id), { currentAmount: increment(-transactionData.amount) }); }
                 await batch.commit(); 
             }
-            // CASO 3: É UMA EXCLUSÃO NORMAL (transação única, categoria)
-            else {
-                await deleteDoc(doc(db, collectionName, id));
-            }
-            
-        } catch (error) {
-            console.error(`Erro ao Deletar ${type}:`, error);
-            stateSetter(originalState); 
-            alert(`Erro ao excluir.`);
-        }
+            else { await deleteDoc(doc(db, collectionName, id)); }
+        } catch (error) { console.error(`Erro ao Deletar ${type}:`, error); alert(`Erro ao excluir.`); }
     };
     
-    const handleAddFixedExpense = async (expense) => {
-        if (!user) return; try { await addDoc(collection(db, 'fixedExpenses'), { ...expense, userId: user.uid }); } catch (error) { console.error("Erro Adicionar Gasto Fixo:", error); }
-    };
-    const handleDeleteFixedExpense = (id) => {
-        if (!user) return; setDeleteModalState({ isOpen: true, id: id, type: 'fixedExpense' });
-    };
-    const handleConfirmDeleteFixedExpense = async () => {
-         const { id } = deleteModalState; if (!id || deleteModalState.type !== 'fixedExpense') return; const originalState = [...fixedExpenses]; setDeleteModalState({ isOpen: false, id: null, type: null }); setFixedExpenses(prev => prev.filter(item => item.id !== id)); try { await deleteDoc(doc(db, 'fixedExpenses', id)); } catch(error) { console.error("Erro Deletar Gasto Fixo:", error); setFixedExpenses(originalState); alert("Erro ao excluir gasto fixo."); }
-    };
-    const handleUpdateFixedExpense = async (updatedExpense) => {
-        if (!user || !updatedExpense.id) return; try { const { id, ...dataToUpdate } = updatedExpense; await updateDoc(doc(db, 'fixedExpenses', id), dataToUpdate); setIsEditFixedExpenseModalOpen(false); setEditingFixedExpense(null); } catch (error) { console.error("Erro Atualizar Gasto Fixo:", error); alert("Não foi possível atualizar."); }
-    };
+    const handleAddFixedExpense = async (expense) => { if (!user) return; try { await addDoc(collection(db, 'fixedExpenses'), { ...expense, userId: user.uid }); } catch (error) { console.error("Erro Add Fixo:", error); } };
+    const handleDeleteFixedExpense = (id) => { if (!user) return; setDeleteModalState({ isOpen: true, id: id, type: 'fixedExpense' }); };
+    const handleConfirmDeleteFixedExpense = async () => { const { id } = deleteModalState; if (!id) return; setDeleteModalState({ isOpen: false, id: null, type: null }); try { await deleteDoc(doc(db, 'fixedExpenses', id)); } catch(error) { console.error("Erro Delete Fixo:", error); } };
+    const handleUpdateFixedExpense = async (updatedExpense) => { if (!user || !updatedExpense.id) return; try { const { id, ...dataToUpdate } = updatedExpense; await updateDoc(doc(db, 'fixedExpenses', id), dataToUpdate); setIsEditFixedExpenseModalOpen(false); setEditingFixedExpense(null); } catch (error) { console.error("Erro Update Fixo:", error); } };
     const handleSignOut = () => signOut(auth);
     const openEditTransactionModal = (transaction) => { setEditingTransaction(transaction); setIsEditTransactionModalOpen(true); };
     const openEditCategoryModal = (category) => { setEditingCategory(category); setIsEditCategoryModalOpen(true); };
     const openEditFixedExpenseModal = (expense) => { setEditingFixedExpense(expense); setIsEditFixedExpenseModalOpen(true); };
-    const handleCardFilterAndScroll = (filterValue) => {
-        const newFilter = typeFilterOptions.find(opt => opt.value === filterValue) || typeFilterOptions[0]; if (typeFilter.value === filterValue) { setTypeFilter(typeFilterOptions[0]); } else { setTypeFilter(newFilter); } transactionListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
+    const handleCardFilterAndScroll = (filterValue) => { const newFilter = typeFilterOptions.find(opt => opt.value === filterValue) || typeFilterOptions[0]; setTypeFilter(newFilter); transactionListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     const handleChartClick = (type) => { navigate('/report', { state: { reportType: type, reportMonth: currentMonth } }); };
 
-    
-    // --- Funções de Modal de Metas (Adicionar) ---
-    const openAddFundsModal = (goal) => {
-        setSelectedGoal(goal);
-        setIsAddFundsModalOpen(true);
-    };
-    const closeAddFundsModal = () => {
-        setSelectedGoal(null);
-        setIsAddFundsModalOpen(false);
-    };
+    const openAddFundsModal = (goal) => { setSelectedGoal(goal); setIsAddFundsModalOpen(true); };
+    const closeAddFundsModal = () => { setSelectedGoal(null); setIsAddFundsModalOpen(false); };
     const handleAddFundsToGoal = async (goal, amount, paymentMethod) => {
-        if (!user || !goal || amount <= 0 || !paymentMethod) {
-            throw new Error("Dados inválidos para adicionar fundos.");
-        }
+        if (!user || !goal || amount <= 0 || !paymentMethod) throw new Error("Dados inválidos.");
         const metaCategory = categories.find(c => c.name.toLowerCase() === 'metas');
-        if (!metaCategory) {
-            throw new Error("Erro: Categoria 'Metas' não encontrada. Por favor, crie uma categoria chamada 'Metas' para registrar esta contribuição.");
-        }
+        if (!metaCategory) throw new Error("Categoria 'Metas' não encontrada.");
         const batch = writeBatch(db);
-        const goalRef = doc(db, 'goals', goal.id);
-        batch.update(goalRef, {
-            currentAmount: increment(amount) 
-        });
+        batch.update(doc(db, 'goals', goal.id), { currentAmount: increment(amount) });
         const newTransactionRef = doc(collection(db, 'transactions'));
-        const newTransactionData = {
-            userId: user.uid,
-            description: `Contribuição para Meta: ${goal.goalName}`,
-            amount: amount,
-            date: Timestamp.now(), 
-            type: 'expense', 
-            category: metaCategory.name, 
-            paymentMethod: paymentMethod,
-            isPaid: true, 
-            isInstallment: false,
-            installments: 1,
-        };
-        batch.set(newTransactionRef, newTransactionData);
+        batch.set(newTransactionRef, { userId: user.uid, description: `Contribuição para Meta: ${goal.goalName}`, amount: amount, date: Timestamp.now(), type: 'expense', category: metaCategory.name, paymentMethod: paymentMethod, isPaid: true, isInstallment: false, installments: 1 });
         await batch.commit();
     };
 
-    // --- Funções de Modal de Metas (Resgatar) ---
-    const openWithdrawModal = (goal) => {
-        setSelectedGoal(goal);
-        setIsWithdrawModalOpen(true);
-    };
-    const closeWithdrawModal = () => {
-        setSelectedGoal(null);
-        setIsWithdrawModalOpen(false);
-    };
-    
-    /** Função que Resgata Fundos (Subtrai da Meta + Cria Ganho) */
+    const openWithdrawModal = (goal) => { setSelectedGoal(goal); setIsWithdrawModalOpen(true); };
+    const closeWithdrawModal = () => { setSelectedGoal(null); setIsWithdrawModalOpen(false); };
     const handleWithdrawFromGoal = async (goal, amount, paymentMethod) => {
-        if (!user || !goal || amount <= 0 || amount > goal.currentAmount || !paymentMethod) {
-            throw new Error("Dados inválidos para resgatar fundos.");
-        }
-
+        if (!user || !goal || amount <= 0 || amount > goal.currentAmount || !paymentMethod) throw new Error("Dados inválidos.");
         const metaCategory = categories.find(c => c.name.toLowerCase() === 'metas');
-        if (!metaCategory) {
-            throw new Error("Erro: Categoria 'Metas' não encontrada. Por favor, crie uma categoria chamada 'Metas' para registrar este resgate.");
-        }
-
+        if (!metaCategory) throw new Error("Categoria 'Metas' não encontrada.");
         const batch = writeBatch(db);
-        
-        const goalRef = doc(db, 'goals', goal.id);
-        batch.update(goalRef, {
-            currentAmount: increment(-amount) 
-        });
-
+        batch.update(doc(db, 'goals', goal.id), { currentAmount: increment(-amount) });
         const newTransactionRef = doc(collection(db, 'transactions'));
-        const newTransactionData = {
-            userId: user.uid,
-            description: `Resgate da Meta: ${goal.goalName}`,
-            amount: amount,
-            date: Timestamp.now(), 
-            type: 'income', 
-            category: metaCategory.name, 
-            paymentMethod: paymentMethod, 
-            isPaid: true, 
-            isInstallment: false,
-            installments: 1,
-        };
-        batch.set(newTransactionRef, newTransactionData);
-
+        batch.set(newTransactionRef, { userId: user.uid, description: `Resgate da Meta: ${goal.goalName}`, amount: amount, date: Timestamp.now(), type: 'income', category: metaCategory.name, paymentMethod: paymentMethod, isPaid: true, isInstallment: false, installments: 1 });
         await batch.commit();
     };
 
-
-    // --- LÓGICA PRINCIPAL E CÁLCULOS ---
+    // --- CÁLCULOS PRINCIPAIS ---
+    
+    // CORREÇÃO AQUI: Lógica alterada para evitar duplicação
     const allTransactionsForMonth = useMemo(() => {
-        let monthTransactions = transactions.filter(t => new Date(t.date).getMonth() === currentMonth.getMonth() && new Date(t.date).getFullYear() === currentMonth.getFullYear());
+        let monthTransactions = [...transactions]; 
         fixedExpenses.forEach(fixed => {
-            const paidVersionExists = monthTransactions.some(t => !t.isFixed && t.isPaid && t.description.toLowerCase().includes(fixed.description.toLowerCase()) && new Date(t.date).getDate() === fixed.dayOfMonth);
-            if (!paidVersionExists) {
+            // Verifica se existe QUALQUER transação real (paga ou não) para este fixo
+            const realVersionExists = monthTransactions.some(t => 
+                !t.isFixed && 
+                // REMOVIDO: t.isPaid && (Isso causava o bug)
+                t.description.toLowerCase().includes(fixed.description.toLowerCase()) && 
+                new Date(t.date).getDate() === fixed.dayOfMonth
+            );
+            
+            // Só adiciona a previsão (ghost) se NÃO existir nenhuma transação real
+            if (!realVersionExists) {
                 monthTransactions.push({
-                    id: `fixed-${fixed.id}-${currentMonth.getFullYear()}-${currentMonth.getMonth()}`, description: fixed.description, amount: fixed.amount,
-                    date: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), fixed.dayOfMonth), type: 'expense', category: fixed.category, isPaid: false, isFixed: true,
+                    id: `fixed-${fixed.id}-${currentMonth.getFullYear()}-${currentMonth.getMonth()}`, 
+                    description: fixed.description, amount: fixed.amount,
+                    date: new Date(currentMonth.getFullYear(), currentMonth.getMonth(), fixed.dayOfMonth), 
+                    type: 'expense', category: fixed.category, isPaid: false, isFixed: true,
                 });
             }
         });
-        return monthTransactions;
+        return monthTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
     }, [transactions, fixedExpenses, currentMonth]);
+
     const { incomeTotal, expensePaid, expenseToPay, balance } = useMemo(() => {
-        let income = 0, paidExpense = 0, toPayExpense = 0; allTransactionsForMonth.forEach(t => { (t.type === 'income') ? income += t.amount : (t.isPaid ? paidExpense += t.amount : toPayExpense += t.amount); }); return { incomeTotal: income, expensePaid: paidExpense, expenseToPay: toPayExpense, balance: income - paidExpense };
+        let income = 0, paidExpense = 0, toPayExpense = 0; 
+        allTransactionsForMonth.forEach(t => { 
+            (t.type === 'income') ? income += t.amount : (t.isPaid ? paidExpense += t.amount : toPayExpense += t.amount); 
+        }); 
+        return { incomeTotal: income, expensePaid: paidExpense, expenseToPay: toPayExpense, balance: income - paidExpense };
     }, [allTransactionsForMonth]);
+
     const expenseChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'expense', categories), [allTransactionsForMonth, categories]);
     const incomeChartData = useMemo(() => generateChartData(allTransactionsForMonth, 'income', categories), [allTransactionsForMonth, categories]);
-    const categoryFilterOptions = useMemo(() => [ ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label)) ], [categories]);
-    const transactionsForDisplay = useMemo(() => {
-        let baseList; if (transactionViewTab === 'fixed') { baseList = allTransactionsForMonth.filter(t => t.isFixed); } else { baseList = allTransactionsForMonth.filter(t => !t.isFixed || (t.isFixed && t.isPaid)); } let filteredByType = baseList; switch (typeFilter.value) { case 'income': filteredByType = baseList.filter(t => t.type === 'income'); break; case 'paidExpense': filteredByType = baseList.filter(t => t.type === 'expense' && t.isPaid); break; case 'toPayExpense': filteredByType = baseList.filter(t => t.type === 'expense' && !t.isPaid); break; default: break; } const descLower = descriptionFilter.toLowerCase(); const selectedCategoryNames = categoryFilter ? categoryFilter.map(opt => opt.value.toLowerCase()) : []; return filteredByType.filter(t => { const descriptionMatch = t.description?.toLowerCase().includes(descLower) ?? true; const categoryMatch = selectedCategoryNames.length === 0 || selectedCategoryNames.includes(t.category?.toLowerCase()); return descriptionMatch && categoryMatch; });
-    }, [typeFilter, transactionViewTab, allTransactionsForMonth, descriptionFilter, categoryFilter, categories]); 
+
     const expensesByCategory = useMemo(() => {
-        const monthlyExpenses = allTransactionsForMonth.filter(t => t.type === 'expense'); return monthlyExpenses.reduce((acc, transaction) => { const categoryName = transaction.category || 'Outros'; acc[categoryName] = (acc[categoryName] || 0) + transaction.amount; return acc; }, {});
-    }, [allTransactionsForMonth]); 
+        const monthlyExpenses = allTransactionsForMonth.filter(t => t.type === 'expense'); 
+        return monthlyExpenses.reduce((acc, transaction) => { 
+            const categoryName = transaction.category || 'Outros'; 
+            acc[categoryName] = (acc[categoryName] || 0) + transaction.amount; 
+            return acc; 
+        }, {});
+    }, [allTransactionsForMonth]);
 
+    const transactionsForDisplay = useMemo(() => {
+        let baseList; 
+        if (transactionViewTab === 'fixed') { baseList = allTransactionsForMonth.filter(t => t.isFixed); } 
+        else { baseList = allTransactionsForMonth.filter(t => !t.isFixed || (t.isFixed && t.isPaid)); } 
+        let filteredByType = baseList; 
+        switch (typeFilter.value) { 
+            case 'income': filteredByType = baseList.filter(t => t.type === 'income'); break; 
+            case 'paidExpense': filteredByType = baseList.filter(t => t.type === 'expense' && t.isPaid); break; 
+            case 'toPayExpense': filteredByType = baseList.filter(t => t.type === 'expense' && !t.isPaid); break; 
+        } 
+        const descLower = descriptionFilter.toLowerCase(); 
+        const selectedCategoryNames = categoryFilter ? categoryFilter.map(opt => opt.value.toLowerCase()) : []; 
+        return filteredByType.filter(t => { 
+            const descriptionMatch = t.description?.toLowerCase().includes(descLower) ?? true; 
+            const categoryMatch = selectedCategoryNames.length === 0 || selectedCategoryNames.includes(t.category?.toLowerCase()); 
+            return descriptionMatch && categoryMatch; 
+        });
+    }, [typeFilter, transactionViewTab, allTransactionsForMonth, descriptionFilter, categoryFilter]); 
 
-    if (loading) return <div>Carregando dados...</div>; 
+    const categoryFilterOptions = useMemo(() => [ ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label)) ], [categories]);
+
+    if (loadingOtherData || (user && loadingTransactions)) return <div style={{padding: '50px', textAlign: 'center'}}>Carregando dashboard...</div>; 
 
     return (
         <>
-            {/* --- RENDERIZAÇÃO DE TODOS OS MODAIS --- */}
             <ConfirmationModal isOpen={deleteModalState.isOpen} onClose={() => setDeleteModalState({ isOpen: false, id: null, type: null, transactionData: null })} onConfirm={deleteModalState.type === 'fixedExpense' ? handleConfirmDeleteFixedExpense : handleConfirmDelete} message="Esta ação é permanente..." />
             <EditTransactionModal isOpen={isEditTransactionModalOpen} onClose={() => { setIsEditTransactionModalOpen(false); setEditingTransaction(null); }} transaction={editingTransaction} categories={categories} onSave={handleUpdateTransaction} />
             <EditCategoryModal isOpen={isEditCategoryModalOpen} onClose={() => { setIsEditCategoryModalOpen(false); setEditingCategory(null); }} category={editingCategory} onSave={handleUpdateCategory} />
             <EditFixedExpenseModal isOpen={isEditFixedExpenseModalOpen} onClose={() => { setIsEditFixedExpenseModalOpen(false); setEditingFixedExpense(null); }} expense={editingFixedExpense} categories={categories} onSave={handleUpdateFixedExpense} />
-            
-            <AddFundsToGoalModal 
-                isOpen={isAddFundsModalOpen}
-                onClose={closeAddFundsModal}
-                goal={selectedGoal}
-                categories={categories} 
-                onSave={handleAddFundsToGoal}
-            />
-            
-            <WithdrawFromGoalModal 
-                isOpen={isWithdrawModalOpen}
-                onClose={closeWithdrawModal}
-                goal={selectedGoal}
-                categories={categories} 
-                onSave={handleWithdrawFromGoal}
-            />
+            <AddFundsToGoalModal isOpen={isAddFundsModalOpen} onClose={closeAddFundsModal} goal={selectedGoal} categories={categories} onSave={handleAddFundsToGoal} />
+            <WithdrawFromGoalModal isOpen={isWithdrawModalOpen} onClose={closeWithdrawModal} goal={selectedGoal} categories={categories} onSave={handleWithdrawFromGoal} />
+            <ActionModal isOpen={paymentActionModal.isOpen} onClose={() => setPaymentActionModal({ isOpen: false, transaction: null })} title="Confirmar Pagamento de Parcela" message={`Você está pagando: "${paymentActionModal.transaction?.description || 'parcela'}". Como deseja continuar?`} actions={[ { label: 'Pagar somente esta', onClick: () => handlePaymentAction('single', paymentActionModal.transaction), className: 'confirm', style: { backgroundColor: 'var(--primary-color)' } }, { label: 'Quitar (Pagar todas)', onClick: () => handlePaymentAction('all', paymentActionModal.transaction), className: 'confirm', style: { backgroundColor: 'var(--income-color)' } }, { label: 'Cancelar', onClick: () => setPaymentActionModal({ isOpen: false, transaction: null }), className: 'cancel' } ]} />
 
-            <ActionModal
-                isOpen={paymentActionModal.isOpen}
-                onClose={() => setPaymentActionModal({ isOpen: false, transaction: null })}
-                title="Confirmar Pagamento de Parcela"
-                message={`Você está pagando: "${paymentActionModal.transaction?.description || 'parcela'}". Como deseja continuar?`}
-                actions={[
-                    {
-                        label: 'Pagar somente esta',
-                        onClick: () => handlePaymentAction('single', paymentActionModal.transaction),
-                        className: 'confirm', 
-                        style: { backgroundColor: 'var(--primary-color)' } 
-                    },
-                    {
-                        label: 'Quitar (Pagar todas)',
-                        onClick: () => handlePaymentAction('all', paymentActionModal.transaction),
-                        className: 'confirm', 
-                        style: { backgroundColor: 'var(--income-color)' } 
-                    },
-                    {
-                        label: 'Cancelar',
-                        onClick: () => setPaymentActionModal({ isOpen: false, transaction: null }),
-                        className: 'cancel' 
-                    }
-                ]}
-            />
-
-            {/* --- LAYOUT PRINCIPAL DO DASHBOARD --- */}
             <div className="dashboard-container">
                 <header>
                     <h1>Meu Dashboard</h1>
@@ -767,38 +474,26 @@ const Dashboard = () => {
                             <div className="sidebar-content-container">
                                 {sidebarTab === 'transaction' && ( <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} /> )}
                                 {sidebarTab === 'fixed' && ( <FixedExpensesManager categories={categories} onAddFixedExpense={handleAddFixedExpense} fixedExpenses={fixedExpenses} onDeleteFixedExpense={handleDeleteFixedExpense} onEditFixedExpense={openEditFixedExpenseModal} /> )}
-                                {sidebarTab === 'budget' && ( 
-                                    <BudgetManager 
-                                        categories={categories} 
-                                        currentMonth={currentMonth} 
-                                        // AQUI ESTÁ A CORREÇÃO:
-                                        budgets={budgets} // Passa o estado "ao vivo"
-                                    /> 
-                                )}
+                                {sidebarTab === 'budget' && ( <BudgetManager categories={categories} currentMonth={currentMonth} budgets={budgets} /> )}
                                 {sidebarTab === 'goal' && ( <GoalManager /> )} 
                             </div>
 
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
                             
-                            {/* Este componente agora recebe a prop 'budgets' correta */}
+                            {/* Uso da variável corrigida */}
                             <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
                             
-                            <GoalProgressList 
-                                goals={goals} 
-                                onAddFundsClick={openAddFundsModal} 
-                                onWithdrawFundsClick={openWithdrawModal}
-                            /> 
-                        
-                        </div> {/* Fim da Sidebar */}
+                            <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/> 
+                        </div>
 
                         <div className="content">
                             <div className="charts-grid">
-                                <div className="chart-item" onClick={() => handleChartClick('income')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de ganhos">
-                                    <h4>Ganhos por Categoria</h4>
+                                <div className="chart-item" onClick={() => handleChartClick('income')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de recebimentos">
+                                    <h4>Recebimentos por Categoria</h4>
                                     {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum ganho neste mês.</p>}
                                 </div>
-                                <div className="chart-item" onClick={() => handleChartClick('expense')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de gastos">
-                                    <h4>Gastos por Categoria</h4>
+                                <div className="chart-item" onClick={() => handleChartClick('expense')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de despesas">
+                                    <h4>Despesas por Categoria</h4>
                                     {expenseChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum gasto neste mês.</p>}
                                 </div>
                             </div>
@@ -817,10 +512,10 @@ const Dashboard = () => {
                                         <Select options={categoryFilterOptions} value={categoryFilter} onChange={setCategoryFilter} placeholder="Categoria(s)..." isClearable={true} isMulti closeMenuOnSelect={false} hideSelectedOptions={false} controlShouldRenderValue={false} className="filter-input category-filter" classNamePrefix="react-select" />
                                     </div>
                                 </div>
-                                    <TransactionList transactions={transactionsForDisplay} categories={categories} onDeleteTransaction={(id, type) => handleDeleteRequest(id, type)} onEditTransaction={openEditTransactionModal} onTogglePaid={handleTogglePaidStatus} />
+                                <TransactionList transactions={transactionsForDisplay} categories={categories} onDeleteTransaction={(id, type) => handleDeleteRequest(id, type)} onEditTransaction={openEditTransactionModal} onTogglePaid={handleTogglePaidStatus} />
                             </div>
-                        </div> {/* Fim do Content */}
-                    </div> {/* Fim do Main Layout */}
+                        </div>
+                    </div>
                 </main>
             </div>
         </>

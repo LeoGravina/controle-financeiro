@@ -1,13 +1,6 @@
-// ATUALIZADO: src/pages/ReportPage.jsx
-// - Coloca BudgetProgressList e GoalProgressList DENTRO de um único card.
-// - Usa 'report-summary-grid' para layout interno responsivo (lado a lado / empilhado).
-// - Adicionado botão "Ver Relatório de Ganhos/Gastos".
-// - Passa 'isReadOnly={true}' para o TransactionList.
-// - Busca e exibe BudgetProgressList e GoalProgressList (sem ações).
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-// query, onSnapshot, getDocs, Timestamp importados ou já existentes
 import { collection, query, where, onSnapshot, getDocs, Timestamp } from 'firebase/firestore'; 
 import { auth, db } from '../firebase/config';
 import Select from 'react-select'; 
@@ -22,12 +15,10 @@ import TransactionList from '../components/TransactionList';
 import BudgetProgressList from '../components/BudgetProgressList';
 import GoalProgressList from '../components/GoalProgressList';
 
-// Tooltip Personalizado (Ajustado para funcionar com LineChart também)
 const CustomTooltip = ({ active, payload, label }) => { 
     if (active && payload && payload.length) {
-        const dataPoint = payload[0]; // Pega o primeiro ponto de dados
+        const dataPoint = payload[0]; 
         
-        // Para PieChart ou Histograma por Categoria (verifica se tem 'percent' ou 'name' no payload interno)
         if (dataPoint.payload.percent !== undefined || dataPoint.payload.name !== undefined) {
             const data = dataPoint;
             const name = data.name || data.payload.name; 
@@ -44,7 +35,6 @@ const CustomTooltip = ({ active, payload, label }) => {
                 </div>
             );
         } 
-        // Para LineChart Comparativo (ou BarChart comparativo com label)
         else if (label) {
              return (
                 <div className="custom-tooltip">
@@ -61,7 +51,6 @@ const CustomTooltip = ({ active, payload, label }) => {
     return null;
 };
 
-// Função para gerar dados (para Pizza e Histograma)
 const generateChartData = (transactions, type, categories) => {
     const filtered = transactions.filter(t => t.type === type);
     const total = filtered.reduce((acc, t) => acc + t.amount, 0);
@@ -84,7 +73,6 @@ const ReportPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Estados
     const [user, setUser] = useState(null);
     const [transactions, setTransactions] = useState([]); 
     const [previousMonthTransactions, setPreviousMonthTransactions] = useState([]); 
@@ -98,7 +86,6 @@ const ReportPage = () => {
     const [reportDescriptionFilter, setReportDescriptionFilter] = useState('');
     const [reportCategoryFilter, setReportCategoryFilter] = useState(null); 
 
-    // Efeitos
     useEffect(() => { window.scrollTo(0, 0); }, []); 
     useEffect(() => {
         if (location.state && location.state.reportType && location.state.reportMonth) {
@@ -116,7 +103,6 @@ const ReportPage = () => {
         return () => unsubAuth();
     }, []);
     
-    // useEffect principal para buscar todos os dados necessários
     useEffect(() => { 
         if (!user || !reportMonth) { 
             setCategories([]); setFixedExpenses([]); setTransactions([]); setPreviousMonthTransactions([]);
@@ -126,7 +112,6 @@ const ReportPage = () => {
         }
         setLoading(true); 
         let listenersActive = true;
-        // Adiciona flags para budgets e goals
         let dataLoaded = { categories: false, fixedExpenses: false, transactions: false, budgets: false, goals: false }; 
 
         const checkLoadingDone = () => {
@@ -135,7 +120,6 @@ const ReportPage = () => {
             }
         };
 
-        // Listeners existentes (categories, fixedExpenses)
         const unsubCategories = onSnapshot(query(collection(db, 'categories'), where('userId', '==', user.uid)), (snap) => { 
             if (listenersActive) setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() }))); dataLoaded.categories = true; checkLoadingDone();
         }, err => { console.error("Erro Cat:", err); dataLoaded.categories = true; checkLoadingDone(); });
@@ -144,7 +128,6 @@ const ReportPage = () => {
              if (listenersActive) setFixedExpenses(snap.docs.map(d => ({ id: d.id, ...d.data() }))); dataLoaded.fixedExpenses = true; checkLoadingDone();
          }, err => { console.error("Erro Fixed:", err); dataLoaded.fixedExpenses = true; checkLoadingDone(); });
 
-        // Busca de Transações (Atualizada com flags)
         const fetchMonthlyTransactions = async () => {
             try {
                 const currentMonthStart = Timestamp.fromDate(reportMonth);
@@ -169,7 +152,6 @@ const ReportPage = () => {
         };
         fetchMonthlyTransactions();
 
-        // Busca de Orçamentos (Budgets) para o mês do relatório
         const month = reportMonth.getMonth();
         const year = reportMonth.getFullYear();
         const budgetQuery = query(collection(db, 'budgets'), 
@@ -183,7 +165,6 @@ const ReportPage = () => {
             if (listenersActive) { setBudgets([]); dataLoaded.budgets = true; checkLoadingDone(); }
         });
 
-        // Busca de Metas (Goals) - todas do usuário
         const goalsQuery = query(collection(db, 'goals'), where('userId', '==', user.uid));
         const unsubGoals = onSnapshot(goalsQuery, (snap) => {
             if (listenersActive) {
@@ -196,18 +177,14 @@ const ReportPage = () => {
              if (listenersActive) { setGoals([]); dataLoaded.goals = true; checkLoadingDone(); }
         });
 
-        // Função de limpeza atualizada para incluir os novos listeners
         return () => { listenersActive = false; unsubCategories(); unsubFixedExpenses(); unsubBudgets(); unsubGoals(); };
     }, [user, reportMonth]); 
     
-    // Efeito de Scroll (sem alteração)
     useEffect(() => { 
         const listElement = document.querySelector('.report-inner-list-container ul'); 
         if (listElement) { listElement.scrollTop = 0; }
      }, [reportDescriptionFilter, reportCategoryFilter]); 
 
-    // Cálculos
-    // 'allTransactionsForMonth' (sem alteração)
     const allTransactionsForMonth = useMemo(() => {
         if (!reportMonth) return [];
         const month = reportMonth.getMonth();
@@ -215,7 +192,6 @@ const ReportPage = () => {
         let monthTransactions = [...transactions]; 
         fixedExpenses.forEach(fixed => { 
              const paidVersionExists = monthTransactions.some(t => !t.isFixed && t.isPaid && t.description.toLowerCase().includes(fixed.description.toLowerCase()) && new Date(t.date).getDate() === fixed.dayOfMonth);
-            // Adiciona gasto fixo APENAS se não existir uma versão paga E se for do tipo 'expense'
             if (!paidVersionExists) { 
                 monthTransactions.push({
                     id: `fixed-${fixed.id}-${year}-${month}`, description: fixed.description, amount: fixed.amount,
@@ -227,15 +203,12 @@ const ReportPage = () => {
         return monthTransactions;
     }, [transactions, fixedExpenses, reportMonth]); 
 
-    // 'reportCategoryFilterOptions' (sem alteração)
     const reportCategoryFilterOptions = useMemo(() => [ 
         ...categories.map(cat => ({ value: cat.name, label: cat.name })).sort((a, b) => a.label.localeCompare(b.label))
     ], [categories]);
 
-    // 'filteredTransactions' (sem alteração)
     const filteredTransactions = useMemo(() => {
         if (!reportType) return [];
-        // Filtra transações do mês E do tipo selecionado (income/expense)
         let baseList = allTransactionsForMonth.filter(t => t.type === reportType); 
         const descLower = reportDescriptionFilter.toLowerCase();
         const selectedCategoryNames = reportCategoryFilter ? reportCategoryFilter.map(opt => opt.value.toLowerCase()) : [];
@@ -246,10 +219,8 @@ const ReportPage = () => {
         });
     }, [allTransactionsForMonth, reportType, reportDescriptionFilter, reportCategoryFilter]); 
 
-    // Totais (Atualizado para usar 'allTransactionsForMonth')
     const { currentMonthIncomeTotal, currentMonthExpenseTotal, previousMonthIncomeTotal, previousMonthExpenseTotal } = useMemo(() => {
         let currentIncome = 0, currentExpense = 0;
-        // Calcula totais do mês atual USANDO allTransactionsForMonth
         allTransactionsForMonth.forEach(t => { 
             if (t.type === 'income') currentIncome += t.amount; 
             else if (t.type === 'expense') currentExpense += t.amount; 
@@ -267,16 +238,13 @@ const ReportPage = () => {
             previousMonthIncomeTotal: previousIncome, 
             previousMonthExpenseTotal: previousExpense 
         };
-    }, [allTransactionsForMonth, previousMonthTransactions]); // Depende de allTransactionsForMonth agora
+    }, [allTransactionsForMonth, previousMonthTransactions]); 
 
-    // Dados dos Gráficos (Atualizado para usar 'allTransactionsForMonth')
     const chartData = useMemo(() => {
         if (!reportType) return [];
-        // Gera dados do gráfico com base em TODAS as transações do mês
         return generateChartData(allTransactionsForMonth, reportType, categories); 
-    }, [allTransactionsForMonth, reportType, categories]); // Depende de allTransactionsForMonth
+    }, [allTransactionsForMonth, reportType, categories]); 
     
-    // Gráfico comparativo usa os TOTAIS já calculados
     const comparisonChartData = useMemo(() => {
         if (!reportMonth || !reportType) { 
             return [{ month: '', [reportType === 'income' ? 'Ganhos' : 'Gastos']: 0 }, { month: '', [reportType === 'income' ? 'Ganhos' : 'Gastos']: 0 }]; 
@@ -285,9 +253,7 @@ const ReportPage = () => {
         const currentMonthName = reportMonth.toLocaleString('pt-BR', { month: 'short' }); 
         const dataKey = reportType === 'income' ? 'Ganhos' : 'Gastos';
         const previousValue = reportType === 'income' ? previousMonthIncomeTotal : previousMonthExpenseTotal;
-        // Usa o total calculado que inclui gastos fixos para o mês atual
         const currentValue = reportType === 'income' ? currentMonthIncomeTotal : currentMonthExpenseTotal; 
-        // Remove (Filt.) do label atual para clareza
         return [ { month: previousMonthName, [dataKey]: previousValue }, { month: currentMonthName, [dataKey]: currentValue }, ]; 
     }, [reportMonth, reportType, currentMonthIncomeTotal, currentMonthExpenseTotal, previousMonthIncomeTotal, previousMonthExpenseTotal]);
 

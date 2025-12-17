@@ -1,11 +1,9 @@
-// NOVO ARQUIVO: src/components/WithdrawFromGoalModal.jsx
 import React, { useState, useEffect } from 'react';
 import CurrencyInput from './CurrencyInput'; 
 import Select from 'react-select'; 
 import { db, auth } from '../firebase/config'; 
 import { doc, updateDoc, increment } from 'firebase/firestore'; 
 
-// Opções de pagamento (para onde o dinheiro VAI)
 const paymentMethodOptions = [
     { value: 'debit', label: 'Conta Débito' },
     { value: 'credit', label: 'Conta Crédito (Pagar Fatura)' },
@@ -18,7 +16,6 @@ const WithdrawFromGoalModal = ({ isOpen, onClose, goal, categories, onSave }) =>
     const [paymentMethod, setPaymentMethod] = useState(null);
     const [isSaving, setIsSaving] = useState(false); 
 
-    // Limpa o input quando o modal é fechado ou a meta muda
     useEffect(() => {
         if (!isOpen) {
             setAmountToWithdraw('');
@@ -51,10 +48,8 @@ const WithdrawFromGoalModal = ({ isOpen, onClose, goal, categories, onSave }) =>
         setIsSaving(true); 
 
         try {
-            // Chama a função onSave passada pelo Dashboard
-            // Passa o objeto goal completo, o valor, e o 'value' do método de pag.
             await onSave(goal, amount, paymentMethod.value); 
-            onClose(); // Fecha o modal após sucesso
+            onClose();
         } catch (error) {
             console.error("Erro ao resgatar fundos da meta:", error);
             alert(error.message || "Ocorreu um erro ao tentar salvar. Tente novamente.");

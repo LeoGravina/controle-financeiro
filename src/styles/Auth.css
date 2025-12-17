@@ -3,8 +3,8 @@
 body {
     font-family: 'Inter', sans-serif;
     margin: 0;
-    background-color: #f8f9fa; /* Um cinza bem claro para o fundo */
-    color: #343a40; /* Cor de texto padrão mais escura */
+    background-color: #f8f9fa;
+    color: #343a40;
 }
 
 .auth-container {
@@ -12,134 +12,81 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #e0f2f7 0%, #c8e6c9 100%); /* Gradiente suave */
+    background: linear-gradient(135deg, #eef2ff 0%, #dbeafe 100%);
     padding: 20px;
-    box-sizing: border-box;
 }
 
 .auth-card {
     background-color: #ffffff;
-    padding: 45px 40px;
-    border-radius: 15px; /* Bordas mais arredondadas */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); /* Sombra mais suave e profunda */
+    padding: 40px 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(106, 130, 251, 0.15);
     width: 100%;
-    max-width: 450px; /* Um pouco mais largo */
+    max-width: 400px;
     text-align: center;
-    transition: transform 0.3s ease-in-out; /* Animação leve ao interagir */
-}
-
-.auth-card:hover {
-    transform: translateY(-5px); /* Efeito sutil ao passar o mouse */
 }
 
 .auth-card h2 {
-    margin-bottom: 30px;
-    color: #2c3e50; /* Título mais escuro */
-    font-size: 32px; /* Título maior */
+    margin: 0 0 30px 0;
+    color: #1e293b;
+    font-size: 1.8rem;
     font-weight: 700;
-    letter-spacing: -0.5px;
 }
 
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: 20px; /* Mais espaço entre os campos */
+    gap: 15px;
 }
 
-.input-group {
-    text-align: left;
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 8px;
-    color: #6c757d; /* Cor da label mais suave */
-    font-weight: 500;
-    font-size: 15px;
-}
-
+.input-group { text-align: left; }
+.input-group label { display: block; margin-bottom: 6px; color: #64748b; font-size: 0.9rem; font-weight: 500; }
 .input-group input {
     width: 100%;
-    padding: 14px 18px; /* Mais padding */
-    border: 1px solid #ced4da; /* Borda suave */
-    border-radius: 10px; /* Mais arredondado */
-    font-size: 16px;
+    padding: 12px 15px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 1rem;
+    background-color: #f8fafc;
+    transition: all 0.2s;
     box-sizing: border-box;
-    transition: border-color 0.3s, box-shadow 0.3s; /* Transição mais suave */
-    background-color: #fdfdfd; /* Fundo do input */
 }
 
 .input-group input:focus {
     outline: none;
-    border-color: #5c6bc0; /* Cor de foco mais vibrante */
-    box-shadow: 0 0 0 3px rgba(92, 107, 192, 0.2); /* Sombra de foco mais elegante */
-    background-color: #ffffff;
+    border-color: #6a82fb;
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(106, 130, 251, 0.2);
 }
 
 .auth-button {
+    margin-top: 10px;
     width: 100%;
-    padding: 15px;
+    padding: 14px;
     border: none;
     border-radius: 10px;
-    background-color: #6a82fb; /* Azul primário */
+    background-color: #6a82fb;
     color: #ffffff;
-    font-size: 18px; /* Texto maior no botão */
+    font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
-    box-shadow: 0 4px 15px rgba(106, 130, 251, 0.3); /* Sombra no botão */
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(106, 130, 251, 0.3);
 }
 
-.auth-button:hover {
-    background-color: #5c6bc0; /* Tom mais escuro no hover */
-    transform: translateY(-2px);
-}
-
-.auth-button:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 10px rgba(106, 130, 251, 0.4);
-}
+.auth-button:hover { background-color: #5c6bc0; transform: translateY(-2px); }
+.auth-button:active { transform: translateY(0); }
 
 .auth-error {
-    color: #dc3545; /* Vermelho vibrante */
-    background-color: #ffebeb;
-    padding: 12px;
+    color: #e11d48;
+    background-color: #ffe4e6;
+    padding: 10px;
     border-radius: 8px;
-    font-size: 14px;
-    margin-top: 15px;
-    text-align: center;
-    border: 1px solid #f5c6cb;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    border: 1px solid #fecdd3;
 }
 
-.auth-switch-link {
-    margin-top: 25px;
-    color: #6c757d;
-    font-size: 15px;
-}
-
-.auth-switch-link a {
-    color: #6a82fb;
-    font-weight: 600;
-    text-decoration: none;
-    transition: color 0.3s;
-}
-
-.auth-switch-link a:hover {
-    color: #5c6bc0;
-    text-decoration: underline;
-}
-
-/* Responsividade */
-@media (max-width: 500px) {
-    .auth-card {
-        padding: 30px 20px;
-        margin: 15px;
-    }
-    .auth-card h2 {
-        font-size: 28px;
-    }
-    .auth-button {
-        font-size: 16px;
-        padding: 12px;
-    }
-}
+.auth-switch-link { margin-top: 25px; color: #64748b; font-size: 0.95rem; }
+.auth-switch-link a { color: #6a82fb; font-weight: 600; text-decoration: none; }
+.auth-switch-link a:hover { text-decoration: underline; }

@@ -1,4 +1,3 @@
-// NOVO ARQUIVO: src/components/EditGoalModal.jsx
 import React, { useState, useEffect } from 'react';
 import CurrencyInput from './CurrencyInput';
 
@@ -22,10 +21,9 @@ const EditGoalModal = ({ isOpen, onClose, goal, onSave }) => {
             return;
         }
         
-        // Verifica se o novo valor alvo é menor que o valor atual
         if (goal.currentAmount > 0 && newTargetAmount < goal.currentAmount) {
             if (!window.confirm(`Atenção: O novo valor alvo (R$ ${newTargetAmount.toFixed(2)}) é menor que o valor já acumulado (R$ ${goal.currentAmount.toFixed(2)}). Deseja continuar mesmo assim?`)) {
-                return; // Aborta se o usuário cancelar
+                return; 
             }
         }
 

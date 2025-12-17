@@ -1,4 +1,3 @@
-// ATUALIZADO: src/components/EditTransactionModal.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import CurrencyInput from './CurrencyInput';
 import Select from 'react-select';
@@ -20,7 +19,7 @@ const paymentMethodOptions = [
 
 const typeOptions = [
     { value: 'expense', label: 'Despesa' },
-    { value: 'income', label: 'Ganho' }
+    { value: 'income', label: 'Recebimento' }
 ];
 
 const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], onSave }) => {
@@ -42,7 +41,6 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
 
     useEffect(() => {
         if (transaction) {
-            // Define campos padrão
             setDate(formatDateForInput(transaction.date));
             setType(transaction.type || 'expense');
             const currentCategory = categoryOptions.find(opt => opt.label === transaction.category);
@@ -50,24 +48,19 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
             const currentPayment = paymentMethodOptions.find(opt => opt.value === transaction.paymentMethod);
             setPaymentMethod(currentPayment || null);
             
-            // Lógica para descrição, valor e parcelamento
             const installmentMatch = transaction.description?.match(/\((\d+)\/(\d+)\)$/);
             
             if (installmentMatch) {
-                // É um parcelamento (novo ou antigo)
                 setIsInstallment(true);
                 setInstallments(parseInt(installmentMatch[2], 10));
                 setDescription(transaction.description.replace(/\s*\(\d+\/\d+\)$/, '').trim());
 
                 if (transaction.installmentGroupId && transaction.totalAmount) {
-                    // PARCELAMENTO NOVO: Carrega o VALOR TOTAL
                     setAmount(transaction.totalAmount);
                 } else {
-                    // PARCELAMENTO ANTIGO: Carrega o valor da parcela (não permite edição em grupo)
                     setAmount(transaction.amount || '');
                 }
             } else {
-                // NÃO É PARCELAMENTO
                 setIsInstallment(transaction.isInstallment || false);
                 setInstallments(transaction.installments || 2);
                 setDescription(transaction.description || '');
@@ -87,16 +80,15 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
         const selectedPaymentMethod = paymentMethod ? paymentMethod.value : '';
 
         const updatedTransaction = {
-            ...transaction, // Mantém o ID e o installmentGroupId original
+            ...transaction,
             description: description.trim(),
-            amount: parseFloat(amount), // Este agora é o VALOR TOTAL se for parcelado
+            amount: parseFloat(amount), 
             date: Timestamp.fromDate(new Date(date + 'T12:00:00')),
             type,
             category: selectedCategoryName,
             paymentMethod: selectedPaymentMethod,
             isInstallment: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment,
             installments: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment ? installments : 1,
-            // installmentGroupId já está incluído via "...transaction"
         };
         delete updatedTransaction.isFixed;
         onSave(updatedTransaction);
@@ -151,7 +143,6 @@ const EditTransactionModal = ({ isOpen, onClose, transaction, categories = [], o
                         classNamePrefix="react-select"
                     />
 
-                    {/* Lógica de parcelamento não muda visualmente */}
                     {type === 'expense' && ['credit', 'debit', 'pix'].includes(paymentMethod?.value) && (
                         <div className="installment-section">
                             <label>

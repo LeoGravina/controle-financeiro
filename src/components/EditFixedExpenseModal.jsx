@@ -1,15 +1,13 @@
-// ATUALIZADO: src/components/EditFixedExpenseModal.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import CurrencyInput from './CurrencyInput';
-import Select from 'react-select'; // Importa o react-select
+import Select from 'react-select'; 
 
 const EditFixedExpenseModal = ({ isOpen, onClose, expense, categories = [], onSave }) => {
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
-    const [category, setCategory] = useState(null); // Alterado para null (para react-select)
+    const [category, setCategory] = useState(null); 
     const [dayOfMonth, setDayOfMonth] = useState(1);
 
-    // Formata e ordena as categorias para o react-select
     const categoryOptions = useMemo(() =>
         categories
             .map(cat => ({ value: cat.id, label: cat.name }))
@@ -21,12 +19,11 @@ const EditFixedExpenseModal = ({ isOpen, onClose, expense, categories = [], onSa
         if (expense) {
             setDescription(expense.description || '');
             setAmount(expense.amount || '');
-            // Encontra o objeto { value, label } da categoria
             const currentCategory = categoryOptions.find(opt => opt.label === expense.category);
             setCategory(currentCategory || null);
             setDayOfMonth(expense.dayOfMonth || 1);
         }
-    }, [expense, categoryOptions]); // Depende de categoryOptions agora
+    }, [expense, categoryOptions]); 
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -38,7 +35,7 @@ const EditFixedExpenseModal = ({ isOpen, onClose, expense, categories = [], onSa
             ...expense,
             description: description.trim(),
             amount: parseFloat(amount),
-            category: category.label, // Passa o NOME da categoria (label)
+            category: category.label,
             dayOfMonth: parseInt(dayOfMonth, 10),
         };
         onSave(updatedExpense);
@@ -51,12 +48,11 @@ const EditFixedExpenseModal = ({ isOpen, onClose, expense, categories = [], onSa
     return (
         <div className="modal-overlay open" onClick={onClose}>
             <div className="modal-content" onClick={handleContentClick}>
-                <h4>Editar Gasto Fixo</h4>
+                <h4>Editar Despesa Fixa</h4>
                 <form onSubmit={handleSubmit} className="auth-form" style={{ gap: '20px' }}>
                     <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Descrição" required />
                     <CurrencyInput value={amount} onChange={setAmount} />
                     
-                    {/* Substituído por react-select */}
                     <Select
                         options={categoryOptions}
                         value={category}

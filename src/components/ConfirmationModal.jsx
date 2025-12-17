@@ -1,16 +1,15 @@
 import React from 'react';
-import '../styles/Dashboard.css'; // Usando o estilo global do Dashboard
+import '../styles/Dashboard.css';
 
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, message }) => {
   const modalClass = isOpen ? 'modal-overlay open' : 'modal-overlay';
 
-  // Impede o fechamento ao clicar dentro do modal
   const handleContentClick = (e) => {
     e.stopPropagation();
   };
 
   return (
-    <div className={modalClass} onClick={onClose}> {/* Fecha ao clicar fora */}
+    <div className={modalClass} onClick={onClose}> 
       <div className="modal-content" onClick={handleContentClick}>
         <h4>Confirmação</h4>
         <p>{message}</p>

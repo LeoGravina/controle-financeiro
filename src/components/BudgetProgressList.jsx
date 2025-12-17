@@ -1,11 +1,9 @@
-// NOVO ARQUIVO: src/components/BudgetProgressList.jsx
 import React from 'react';
 
-// Função auxiliar para calcular a cor da barra
 const getProgressBarColor = (percentage) => {
-    if (percentage > 100) return 'var(--expense-color)'; // Estourado (vermelho)
-    if (percentage >= 80) return 'var(--pending-color)'; // Aviso (amarelo/laranja)
-    return 'var(--income-color)'; // OK (verde)
+    if (percentage > 100) return 'var(--expense-color)'; 
+    if (percentage >= 80) return 'var(--pending-color)'; 
+    return 'var(--income-color)'; 
 };
 
 const BudgetProgressList = ({ budgets = [], expensesByCategory = {} }) => {
@@ -26,13 +24,11 @@ const BudgetProgressList = ({ budgets = [], expensesByCategory = {} }) => {
             <h4>Progresso dos Orçamentos</h4>
             <ul className="budget-progress-list">
                 {budgets
-                    .sort((a, b) => a.categoryName.localeCompare(b.categoryName)) // Ordena alfabeticamente
+                    .sort((a, b) => a.categoryName.localeCompare(b.categoryName)) 
                     .map(budget => {
                         const spentAmount = expensesByCategory[budget.categoryName] || 0;
                         const limitAmount = budget.limitAmount;
-                        // Calcula porcentagem, limitando a 100% para a barra não ultrapassar visualmente o limite máximo
                         const percentage = limitAmount > 0 ? Math.min((spentAmount / limitAmount) * 100, 100) : 0;
-                         // Calcula porcentagem real para determinar a cor (pode ser > 100)
                         const realPercentage = limitAmount > 0 ? (spentAmount / limitAmount) * 100 : 0;
                         const barColor = getProgressBarColor(realPercentage);
                         const isOverBudget = realPercentage > 100;
@@ -43,7 +39,7 @@ const BudgetProgressList = ({ budgets = [], expensesByCategory = {} }) => {
                                     <span className="budget-item-category">{budget.categoryName}</span>
                                     <span className={`budget-item-values ${isOverBudget ? 'over-budget-text' : ''}`}>
                                         {spentAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} / 
-                                        {' '} {/* Espaço */}
+                                        {' '} 
                                         {limitAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                                     </span>
                                 </div>
