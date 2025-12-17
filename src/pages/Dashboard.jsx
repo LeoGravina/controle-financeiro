@@ -85,6 +85,22 @@ const createDefaultCategories = async (userId) => {
     try { await batch.commit(); } catch (error) { console.error("Erro ao criar categorias padrão:", error); }
 };
 
+// --- COMPONENTE MODAL MOBILE (NOVO) ---
+const MobileAddModal = ({ isOpen, onClose, children }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="modal-overlay open" onClick={onClose}>
+            <div className="modal-content mobile-add-modal-content" onClick={e => e.stopPropagation()}>
+                <div className="form-container-header">
+                    <h3>Nova Movimentação</h3>
+                    <button onClick={onClose} className="action-button">✖</button>
+                </div>
+                {children}
+            </div>
+        </div>
+    );
+};
+
 const Dashboard = () => {
     const [user, setUser] = useState(null);
     const [categories, setCategories] = useState([]);
@@ -115,6 +131,9 @@ const Dashboard = () => {
     const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false); 
     const [selectedGoal, setSelectedGoal] = useState(null); 
     const [paymentActionModal, setPaymentActionModal] = useState({ isOpen: false, transaction: null });
+
+    // ESTADO PARA O MODAL MOBILE
+    const [isMobileAddModalOpen, setIsMobileAddModalOpen] = useState(false);
 
     const navigate = useNavigate();
     const transactionListRef = useRef(null);
@@ -199,6 +218,8 @@ const Dashboard = () => {
             } else {
                 await addDoc(collection(db, 'transactions'), dataToAdd);
             }
+            // Fecha o modal mobile se estiver aberto após adicionar
+            setIsMobileAddModalOpen(false);
         } catch (error) { console.error("Erro Adicionar Transação:", error); }
     };
     
@@ -369,19 +390,15 @@ const Dashboard = () => {
 
     // --- CÁLCULOS PRINCIPAIS ---
     
-    // CORREÇÃO AQUI: Lógica alterada para evitar duplicação
     const allTransactionsForMonth = useMemo(() => {
         let monthTransactions = [...transactions]; 
         fixedExpenses.forEach(fixed => {
-            // Verifica se existe QUALQUER transação real (paga ou não) para este fixo
             const realVersionExists = monthTransactions.some(t => 
                 !t.isFixed && 
-                // REMOVIDO: t.isPaid && (Isso causava o bug)
                 t.description.toLowerCase().includes(fixed.description.toLowerCase()) && 
                 new Date(t.date).getDate() === fixed.dayOfMonth
             );
             
-            // Só adiciona a previsão (ghost) se NÃO existir nenhuma transação real
             if (!realVersionExists) {
                 monthTransactions.push({
                     id: `fixed-${fixed.id}-${currentMonth.getFullYear()}-${currentMonth.getMonth()}`, 
@@ -447,6 +464,16 @@ const Dashboard = () => {
             <WithdrawFromGoalModal isOpen={isWithdrawModalOpen} onClose={closeWithdrawModal} goal={selectedGoal} categories={categories} onSave={handleWithdrawFromGoal} />
             <ActionModal isOpen={paymentActionModal.isOpen} onClose={() => setPaymentActionModal({ isOpen: false, transaction: null })} title="Confirmar Pagamento de Parcela" message={`Você está pagando: "${paymentActionModal.transaction?.description || 'parcela'}". Como deseja continuar?`} actions={[ { label: 'Pagar somente esta', onClick: () => handlePaymentAction('single', paymentActionModal.transaction), className: 'confirm', style: { backgroundColor: 'var(--primary-color)' } }, { label: 'Quitar (Pagar todas)', onClick: () => handlePaymentAction('all', paymentActionModal.transaction), className: 'confirm', style: { backgroundColor: 'var(--income-color)' } }, { label: 'Cancelar', onClick: () => setPaymentActionModal({ isOpen: false, transaction: null }), className: 'cancel' } ]} />
 
+            {/* MODAL EXCLUSIVO PARA MOBILE */}
+            <MobileAddModal isOpen={isMobileAddModalOpen} onClose={() => setIsMobileAddModalOpen(false)}>
+                <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} />
+            </MobileAddModal>
+
+            {/* BOTÃO FLUTUANTE EXCLUSIVO PARA MOBILE */}
+            <button className="mobile-fab" onClick={() => setIsMobileAddModalOpen(true)} aria-label="Adicionar Transação">
+                +
+            </button>
+
             <div className="dashboard-container">
                 <header>
                     <h1>Meu Dashboard</h1>
@@ -463,6 +490,7 @@ const Dashboard = () => {
                         <SummaryCard title="Saldo (Ganhos - Pagos)" value={balance} type="balance" data-tooltip="Saldo do Mês (Ganhos - Despesas Pagas)" />
                     </div>
                     <div className="main-layout">
+                        {/* A SIDEBAR AGORA SERÁ OCULTA NO CSS MOBILE */}
                         <div className="sidebar">
                             <div className="sidebar-tabs">
                                 <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Transação </button>
@@ -480,20 +508,20 @@ const Dashboard = () => {
 
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
                             
-                            {/* Uso da variável corrigida */}
                             <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
                             
                             <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/> 
                         </div>
 
                         <div className="content">
+                            {/* OS GRÁFICOS SERÃO OCULTOS NO CSS MOBILE */}
                             <div className="charts-grid">
-                                <div className="chart-item" onClick={() => handleChartClick('income')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de recebimentos">
-                                    <h4>Recebimentos por Categoria</h4>
+                                <div className="chart-item" onClick={() => handleChartClick('income')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de ganhos">
+                                    <h4>Ganhos por Categoria</h4>
                                     {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum ganho neste mês.</p>}
                                 </div>
-                                <div className="chart-item" onClick={() => handleChartClick('expense')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de despesas">
-                                    <h4>Despesas por Categoria</h4>
+                                <div className="chart-item" onClick={() => handleChartClick('expense')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de gastos">
+                                    <h4>Gastos por Categoria</h4>
                                     {expenseChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum gasto neste mês.</p>}
                                 </div>
                             </div>
