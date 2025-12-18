@@ -85,14 +85,14 @@ const createDefaultCategories = async (userId) => {
     try { await batch.commit(); } catch (error) { console.error("Erro ao criar categorias padrão:", error); }
 };
 
-// --- COMPONENTE MODAL MOBILE (NOVO) ---
-const MobileAddModal = ({ isOpen, onClose, children }) => {
+// --- COMPONENTE MODAL MOBILE GENÉRICO ---
+const MobileModal = ({ isOpen, onClose, title, children }) => {
     if (!isOpen) return null;
     return (
         <div className="modal-overlay open" onClick={onClose}>
-            <div className="modal-content mobile-add-modal-content" onClick={e => e.stopPropagation()}>
+            <div className="modal-content mobile-modal-content" onClick={e => e.stopPropagation()}>
                 <div className="form-container-header">
-                    <h3>Nova Movimentação</h3>
+                    <h3>{title}</h3>
                     <button onClick={onClose} className="action-button">✖</button>
                 </div>
                 {children}
@@ -110,7 +110,6 @@ const Dashboard = () => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [loadingOtherData, setLoadingOtherData] = useState(true); 
 
-    // Hook Otimizado
     const { transactions, loading: loadingTransactions } = useTransactions(user, currentMonth);
 
     const [formType, setFormType] = useState('expense');
@@ -132,8 +131,9 @@ const Dashboard = () => {
     const [selectedGoal, setSelectedGoal] = useState(null); 
     const [paymentActionModal, setPaymentActionModal] = useState({ isOpen: false, transaction: null });
 
-    // ESTADO PARA O MODAL MOBILE
-    const [isMobileAddModalOpen, setIsMobileAddModalOpen] = useState(false);
+    // ESTADOS PARA O MOBILE (MENU E MODAL)
+    const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+    const [mobileView, setMobileView] = useState(null); // 'transaction', 'category', 'goals', 'charts'
 
     const navigate = useNavigate();
     const transactionListRef = useRef(null);
@@ -191,6 +191,12 @@ const Dashboard = () => {
         if (listElement) { listElement.scrollTop = 0; }
     }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
 
+    // Função auxiliar para abrir views mobile
+    const openMobileView = (viewName) => {
+        setMobileView(viewName);
+        setIsFabMenuOpen(false); // Fecha o menu flutuante
+    };
+
     const handleAddTransaction = async (transaction) => {
         if (!user) return; const { isInstallment, installments, ...rest } = transaction;
         const dataToAdd = { ...rest, userId: user.uid, date: Timestamp.fromDate(transaction.date), isPaid: transaction.isPaid || false };
@@ -218,11 +224,11 @@ const Dashboard = () => {
             } else {
                 await addDoc(collection(db, 'transactions'), dataToAdd);
             }
-            // Fecha o modal mobile se estiver aberto após adicionar
-            setIsMobileAddModalOpen(false);
+            setMobileView(null); // Fecha o modal após adicionar
         } catch (error) { console.error("Erro Adicionar Transação:", error); }
     };
     
+    // ... (Mantenha as outras funções handleUpdate, handleDelete, etc. iguais) ...
     const handleUpdateTransaction = async (updatedTransaction) => {
         if (!user || !updatedTransaction.id) return;
         if (updatedTransaction.installmentGroupId && updatedTransaction.isInstallment) {
@@ -262,6 +268,7 @@ const Dashboard = () => {
 
     const handleAddCategory = async (category) => {
         if (!user) return; const existing = categories.find(c => c.name.toLowerCase() === category.name.toLowerCase()); if (existing) { alert("Categoria já existe."); return; } try { await addDoc(collection(db, 'categories'), { ...category, userId: user.uid }); } catch (error) { console.error("Erro Adicionar Categoria:", error); }
+        setMobileView(null); // Fecha se for mobile
     };
     
     const handleUpdateCategory = async (updatedCategory) => {
@@ -287,7 +294,7 @@ const Dashboard = () => {
             setIsEditCategoryModalOpen(false); setEditingCategory(null);
         } catch (error) { console.error("Erro update full:", error); alert("Erro ao atualizar."); }
     };
-    
+
     const handleTogglePaidStatus = async (transaction) => {
         if (transaction.installmentGroupId && !transaction.isPaid) { setPaymentActionModal({ isOpen: true, transaction: transaction }); return; }
         if (transaction.isFixed && !transaction.isPaid) { 
@@ -398,7 +405,6 @@ const Dashboard = () => {
                 t.description.toLowerCase().includes(fixed.description.toLowerCase()) && 
                 new Date(t.date).getDate() === fixed.dayOfMonth
             );
-            
             if (!realVersionExists) {
                 monthTransactions.push({
                     id: `fixed-${fixed.id}-${currentMonth.getFullYear()}-${currentMonth.getMonth()}`, 
@@ -464,15 +470,62 @@ const Dashboard = () => {
             <WithdrawFromGoalModal isOpen={isWithdrawModalOpen} onClose={closeWithdrawModal} goal={selectedGoal} categories={categories} onSave={handleWithdrawFromGoal} />
             <ActionModal isOpen={paymentActionModal.isOpen} onClose={() => setPaymentActionModal({ isOpen: false, transaction: null })} title="Confirmar Pagamento de Parcela" message={`Você está pagando: "${paymentActionModal.transaction?.description || 'parcela'}". Como deseja continuar?`} actions={[ { label: 'Pagar somente esta', onClick: () => handlePaymentAction('single', paymentActionModal.transaction), className: 'confirm', style: { backgroundColor: 'var(--primary-color)' } }, { label: 'Quitar (Pagar todas)', onClick: () => handlePaymentAction('all', paymentActionModal.transaction), className: 'confirm', style: { backgroundColor: 'var(--income-color)' } }, { label: 'Cancelar', onClick: () => setPaymentActionModal({ isOpen: false, transaction: null }), className: 'cancel' } ]} />
 
-            {/* MODAL EXCLUSIVO PARA MOBILE */}
-            <MobileAddModal isOpen={isMobileAddModalOpen} onClose={() => setIsMobileAddModalOpen(false)}>
-                <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} />
-            </MobileAddModal>
+            {/* MODAL MÚLTIPLO DO MOBILE */}
+            <MobileModal isOpen={!!mobileView} onClose={() => setMobileView(null)} title={
+                mobileView === 'transaction' ? 'Adicionar Transação' :
+                mobileView === 'category' ? 'Gerenciar Categorias' :
+                mobileView === 'goals' ? 'Minhas Metas' :
+                mobileView === 'charts' ? 'Gráficos do Mês' : ''
+            }>
+                {mobileView === 'transaction' && (
+                     <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} />
+                )}
+                {mobileView === 'category' && (
+                    <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
+                )}
+                {mobileView === 'goals' && (
+                     <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/>
+                )}
+                {mobileView === 'charts' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                         <div className="chart-item">
+                            <h4>Ganhos por Categoria</h4>
+                            {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum ganho neste mês.</p>}
+                         </div>
+                         <div className="chart-item">
+                            <h4>Gastos por Categoria</h4>
+                            {expenseChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum gasto neste mês.</p>}
+                        </div>
+                    </div>
+                )}
+            </MobileModal>
 
-            {/* BOTÃO FLUTUANTE EXCLUSIVO PARA MOBILE */}
-            <button className="mobile-fab" onClick={() => setIsMobileAddModalOpen(true)} aria-label="Adicionar Transação">
-                +
-            </button>
+            {/* BOTÃO FLUTUANTE (FAB) COM MENU */}
+            <div className={`fab-container ${isFabMenuOpen ? 'open' : ''}`}>
+                 {isFabMenuOpen && (
+                    <div className="fab-menu-items">
+                         <div className="fab-item" onClick={() => openMobileView('transaction')}>
+                             <span className="fab-label">Transação</span>
+                             <div className="fab-icon-small">💸</div>
+                         </div>
+                         <div className="fab-item" onClick={() => openMobileView('category')}>
+                             <span className="fab-label">Categorias</span>
+                             <div className="fab-icon-small">📂</div>
+                         </div>
+                         <div className="fab-item" onClick={() => openMobileView('goals')}>
+                             <span className="fab-label">Metas</span>
+                             <div className="fab-icon-small">🎯</div>
+                         </div>
+                         <div className="fab-item" onClick={() => openMobileView('charts')}>
+                             <span className="fab-label">Gráficos</span>
+                             <div className="fab-icon-small">📊</div>
+                         </div>
+                    </div>
+                 )}
+                 <button className="mobile-fab" onClick={() => setIsFabMenuOpen(!isFabMenuOpen)} aria-label="Menu de Ações">
+                    {isFabMenuOpen ? '✖' : '+'}
+                </button>
+            </div>
 
             <div className="dashboard-container">
                 <header>
@@ -490,7 +543,6 @@ const Dashboard = () => {
                         <SummaryCard title="Saldo (Ganhos - Pagos)" value={balance} type="balance" data-tooltip="Saldo do Mês (Ganhos - Despesas Pagas)" />
                     </div>
                     <div className="main-layout">
-                        {/* A SIDEBAR AGORA SERÁ OCULTA NO CSS MOBILE */}
                         <div className="sidebar">
                             <div className="sidebar-tabs">
                                 <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Transação </button>
@@ -514,7 +566,6 @@ const Dashboard = () => {
                         </div>
 
                         <div className="content">
-                            {/* OS GRÁFICOS SERÃO OCULTOS NO CSS MOBILE */}
                             <div className="charts-grid">
                                 <div className="chart-item" onClick={() => handleChartClick('income')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de ganhos">
                                     <h4>Ganhos por Categoria</h4>
