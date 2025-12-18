@@ -62,7 +62,7 @@ const generateChartData = (transactions, type, categories) => {
 
 const typeFilterOptions = [
     { value: 'all', label: 'Tipo (Todos)' },
-    { value: 'income', label: 'Ganhos' },
+    { value: 'income', label: 'Recebimentos' },
     { value: 'paidExpense', label: 'Desp. Pagas' },
     { value: 'toPayExpense', label: 'Desp. a Pagar' }
 ];
@@ -131,9 +131,8 @@ const Dashboard = () => {
     const [selectedGoal, setSelectedGoal] = useState(null); 
     const [paymentActionModal, setPaymentActionModal] = useState({ isOpen: false, transaction: null });
 
-    // ESTADOS PARA O MOBILE (MENU E MODAL)
     const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
-    const [mobileView, setMobileView] = useState(null); // 'transaction', 'category', 'goals', 'charts'
+    const [mobileView, setMobileView] = useState(null); 
 
     const navigate = useNavigate();
     const transactionListRef = useRef(null);
@@ -191,10 +190,25 @@ const Dashboard = () => {
         if (listElement) { listElement.scrollTop = 0; }
     }, [descriptionFilter, categoryFilter, typeFilter, transactionViewTab]);
 
-    // Função auxiliar para abrir views mobile
     const openMobileView = (viewName) => {
         setMobileView(viewName);
-        setIsFabMenuOpen(false); // Fecha o menu flutuante
+        setIsFabMenuOpen(false); 
+    };
+
+    const openEditTransactionModal = (transaction) => { setMobileView(null); setEditingTransaction(transaction); setIsEditTransactionModalOpen(true); };
+    const openEditCategoryModal = (category) => { setMobileView(null); setEditingCategory(category); setIsEditCategoryModalOpen(true); };
+    const openEditFixedExpenseModal = (expense) => { setMobileView(null); setEditingFixedExpense(expense); setIsEditFixedExpenseModalOpen(true); };
+    const openAddFundsModal = (goal) => { setMobileView(null); setSelectedGoal(goal); setIsAddFundsModalOpen(true); };
+    const openWithdrawModal = (goal) => { setMobileView(null); setSelectedGoal(goal); setIsWithdrawModalOpen(true); };
+
+    // --- ACTIONS ---
+    const handleDeleteRequest = (id, type) => {
+        setMobileView(null); 
+        if (type === 'transaction' && id.startsWith('fixed-')) { alert("Despesas fixas só podem ser removidas na seção 'Despesas Fixas'."); return; } 
+        if (type === 'fixedExpense') { handleDeleteFixedExpense(id); return; } 
+        let transactionData = null;
+        if (type === 'transaction') { transactionData = transactions.find(t => t.id === id) || null; }
+        setDeleteModalState({ isOpen: true, id, type, transactionData });
     };
 
     const handleAddTransaction = async (transaction) => {
@@ -224,11 +238,10 @@ const Dashboard = () => {
             } else {
                 await addDoc(collection(db, 'transactions'), dataToAdd);
             }
-            setMobileView(null); // Fecha o modal após adicionar
+            setMobileView(null);
         } catch (error) { console.error("Erro Adicionar Transação:", error); }
     };
     
-    // ... (Mantenha as outras funções handleUpdate, handleDelete, etc. iguais) ...
     const handleUpdateTransaction = async (updatedTransaction) => {
         if (!user || !updatedTransaction.id) return;
         if (updatedTransaction.installmentGroupId && updatedTransaction.isInstallment) {
@@ -268,7 +281,7 @@ const Dashboard = () => {
 
     const handleAddCategory = async (category) => {
         if (!user) return; const existing = categories.find(c => c.name.toLowerCase() === category.name.toLowerCase()); if (existing) { alert("Categoria já existe."); return; } try { await addDoc(collection(db, 'categories'), { ...category, userId: user.uid }); } catch (error) { console.error("Erro Adicionar Categoria:", error); }
-        setMobileView(null); // Fecha se for mobile
+        setMobileView(null);
     };
     
     const handleUpdateCategory = async (updatedCategory) => {
@@ -320,14 +333,6 @@ const Dashboard = () => {
         } catch (error) { console.error("Erro pagamento parcela:", error); alert("Erro ao salvar."); }
     };
     
-    const handleDeleteRequest = (id, type) => {
-        if (type === 'transaction' && id.startsWith('fixed-')) { alert("Gastos fixos só podem ser removidos na seção 'Gastos Fixos'."); return; } 
-        if (type === 'fixedExpense') { handleDeleteFixedExpense(id); return; } 
-        let transactionData = null;
-        if (type === 'transaction') { transactionData = transactions.find(t => t.id === id) || null; }
-        setDeleteModalState({ isOpen: true, id, type, transactionData });
-    };
-    
     const handleConfirmDelete = async () => {
         const { id, type, transactionData } = deleteModalState; 
         if (!id || !type) return;
@@ -363,13 +368,9 @@ const Dashboard = () => {
     const handleConfirmDeleteFixedExpense = async () => { const { id } = deleteModalState; if (!id) return; setDeleteModalState({ isOpen: false, id: null, type: null }); try { await deleteDoc(doc(db, 'fixedExpenses', id)); } catch(error) { console.error("Erro Delete Fixo:", error); } };
     const handleUpdateFixedExpense = async (updatedExpense) => { if (!user || !updatedExpense.id) return; try { const { id, ...dataToUpdate } = updatedExpense; await updateDoc(doc(db, 'fixedExpenses', id), dataToUpdate); setIsEditFixedExpenseModalOpen(false); setEditingFixedExpense(null); } catch (error) { console.error("Erro Update Fixo:", error); } };
     const handleSignOut = () => signOut(auth);
-    const openEditTransactionModal = (transaction) => { setEditingTransaction(transaction); setIsEditTransactionModalOpen(true); };
-    const openEditCategoryModal = (category) => { setEditingCategory(category); setIsEditCategoryModalOpen(true); };
-    const openEditFixedExpenseModal = (expense) => { setEditingFixedExpense(expense); setIsEditFixedExpenseModalOpen(true); };
     const handleCardFilterAndScroll = (filterValue) => { const newFilter = typeFilterOptions.find(opt => opt.value === filterValue) || typeFilterOptions[0]; setTypeFilter(newFilter); transactionListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
     const handleChartClick = (type) => { navigate('/report', { state: { reportType: type, reportMonth: currentMonth } }); };
 
-    const openAddFundsModal = (goal) => { setSelectedGoal(goal); setIsAddFundsModalOpen(true); };
     const closeAddFundsModal = () => { setSelectedGoal(null); setIsAddFundsModalOpen(false); };
     const handleAddFundsToGoal = async (goal, amount, paymentMethod) => {
         if (!user || !goal || amount <= 0 || !paymentMethod) throw new Error("Dados inválidos.");
@@ -382,7 +383,6 @@ const Dashboard = () => {
         await batch.commit();
     };
 
-    const openWithdrawModal = (goal) => { setSelectedGoal(goal); setIsWithdrawModalOpen(true); };
     const closeWithdrawModal = () => { setSelectedGoal(null); setIsWithdrawModalOpen(false); };
     const handleWithdrawFromGoal = async (goal, amount, paymentMethod) => {
         if (!user || !goal || amount <= 0 || amount > goal.currentAmount || !paymentMethod) throw new Error("Dados inválidos.");
@@ -395,8 +395,6 @@ const Dashboard = () => {
         await batch.commit();
     };
 
-    // --- CÁLCULOS PRINCIPAIS ---
-    
     const allTransactionsForMonth = useMemo(() => {
         let monthTransactions = [...transactions]; 
         fixedExpenses.forEach(fixed => {
@@ -470,61 +468,43 @@ const Dashboard = () => {
             <WithdrawFromGoalModal isOpen={isWithdrawModalOpen} onClose={closeWithdrawModal} goal={selectedGoal} categories={categories} onSave={handleWithdrawFromGoal} />
             <ActionModal isOpen={paymentActionModal.isOpen} onClose={() => setPaymentActionModal({ isOpen: false, transaction: null })} title="Confirmar Pagamento de Parcela" message={`Você está pagando: "${paymentActionModal.transaction?.description || 'parcela'}". Como deseja continuar?`} actions={[ { label: 'Pagar somente esta', onClick: () => handlePaymentAction('single', paymentActionModal.transaction), className: 'confirm', style: { backgroundColor: 'var(--primary-color)' } }, { label: 'Quitar (Pagar todas)', onClick: () => handlePaymentAction('all', paymentActionModal.transaction), className: 'confirm', style: { backgroundColor: 'var(--income-color)' } }, { label: 'Cancelar', onClick: () => setPaymentActionModal({ isOpen: false, transaction: null }), className: 'cancel' } ]} />
 
-            {/* MODAL MÚLTIPLO DO MOBILE */}
             <MobileModal isOpen={!!mobileView} onClose={() => setMobileView(null)} title={
                 mobileView === 'transaction' ? 'Adicionar Transação' :
                 mobileView === 'category' ? 'Gerenciar Categorias' :
                 mobileView === 'goals' ? 'Minhas Metas' :
+                mobileView === 'fixed' ? 'Despesas Fixas' :
+                mobileView === 'budget' ? 'Meus Orçamentos' :
                 mobileView === 'charts' ? 'Gráficos do Mês' : ''
             }>
-                {mobileView === 'transaction' && (
-                     <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} />
-                )}
-                {mobileView === 'category' && (
-                    <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
-                )}
-                {mobileView === 'goals' && (
-                     <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/>
-                )}
+                {mobileView === 'transaction' && ( <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} /> )}
+                {mobileView === 'category' && ( <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} /> )}
+                {mobileView === 'goals' && ( <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/> )}
+                {mobileView === 'fixed' && ( <FixedExpensesManager categories={categories} onAddFixedExpense={handleAddFixedExpense} fixedExpenses={fixedExpenses} onDeleteFixedExpense={handleDeleteFixedExpense} onEditFixedExpense={openEditFixedExpenseModal} /> )}
+                {mobileView === 'budget' && ( <BudgetManager categories={categories} currentMonth={currentMonth} budgets={budgets} /> )}
                 {mobileView === 'charts' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                          <div className="chart-item">
-                            <h4>Ganhos por Categoria</h4>
-                            {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum ganho neste mês.</p>}
+                            <h4>Recebimentos por Categoria</h4>
+                            {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum recebimento neste mês.</p>}
                          </div>
                          <div className="chart-item">
-                            <h4>Gastos por Categoria</h4>
+                            <h4>Despesas por Categoria</h4>
                             {expenseChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum gasto neste mês.</p>}
                         </div>
                     </div>
                 )}
             </MobileModal>
 
-            {/* BOTÃO FLUTUANTE (FAB) COM MENU */}
             <div className={`fab-container ${isFabMenuOpen ? 'open' : ''}`}>
                  {isFabMenuOpen && (
                     <div className="fab-menu-items">
-                         <div className="fab-item" onClick={() => openMobileView('transaction')}>
-                             <span className="fab-label">Transação</span>
-                             <div className="fab-icon-small">💸</div>
-                         </div>
-                         <div className="fab-item" onClick={() => openMobileView('category')}>
-                             <span className="fab-label">Categorias</span>
-                             <div className="fab-icon-small">📂</div>
-                         </div>
-                         <div className="fab-item" onClick={() => openMobileView('goals')}>
-                             <span className="fab-label">Metas</span>
-                             <div className="fab-icon-small">🎯</div>
-                         </div>
-                         <div className="fab-item" onClick={() => openMobileView('charts')}>
-                             <span className="fab-label">Gráficos</span>
-                             <div className="fab-icon-small">📊</div>
-                         </div>
+                         <div className="fab-item" onClick={() => openMobileView('transaction')}> <span className="fab-label">Transação</span> <div className="fab-icon-small">💸</div> </div>
+                         <div className="fab-item" onClick={() => openMobileView('category')}> <span className="fab-label">Categorias</span> <div className="fab-icon-small">📂</div> </div>
+                         <div className="fab-item" onClick={() => openMobileView('goals')}> <span className="fab-label">Metas</span> <div className="fab-icon-small">🎯</div> </div>
+                         <div className="fab-item" onClick={() => openMobileView('charts')}> <span className="fab-label">Gráficos</span> <div className="fab-icon-small">📊</div> </div>
                     </div>
                  )}
-                 <button className="mobile-fab" onClick={() => setIsFabMenuOpen(!isFabMenuOpen)} aria-label="Menu de Ações">
-                    {isFabMenuOpen ? '✖' : '+'}
-                </button>
+                 <button className="mobile-fab" onClick={() => setIsFabMenuOpen(!isFabMenuOpen)} aria-label="Menu de Ações"> {isFabMenuOpen ? '✖' : '+'} </button>
             </div>
 
             <div className="dashboard-container">
@@ -537,54 +517,56 @@ const Dashboard = () => {
                 </header>
                 <main>
                     <div className="summary-grid">
-                        <SummaryCard title="Ganhos do Mês" value={incomeTotal} type="income" onClick={() => handleCardFilterAndScroll('income')} isActive={typeFilter.value === 'income'} data-tooltip="Filtrar lista: Mostrar apenas Ganhos do Mês" />
+                        <SummaryCard title="Recebimentos do Mês" value={incomeTotal} type="income" onClick={() => handleCardFilterAndScroll('income')} isActive={typeFilter.value === 'income'} data-tooltip="Filtrar lista: Mostrar apenas Recebimentos" />
                         <SummaryCard title="Despesas Pagas" value={expensePaid} type="expense" onClick={() => handleCardFilterAndScroll('paidExpense')} isActive={typeFilter.value === 'paidExpense'} data-tooltip="Filtrar lista: Mostrar apenas Despesas Pagas" />
                         <SummaryCard title="Despesas a Pagar" value={expenseToPay} type="expense" onClick={() => handleCardFilterAndScroll('toPayExpense')} isActive={typeFilter.value === 'toPayExpense'} data-tooltip="Filtrar lista: Mostrar apenas Despesas a Pagar" />
-                        <SummaryCard title="Saldo (Ganhos - Pagos)" value={balance} type="balance" data-tooltip="Saldo do Mês (Ganhos - Despesas Pagas)" />
+                        <SummaryCard title="Saldo (Receb. - Pagos)" value={balance} type="balance" data-tooltip="Saldo do Mês (Recebimentos - Despesas Pagas)" />
                     </div>
                     <div className="main-layout">
+                        
+                        {/* --- SIDEBAR CORRIGIDA COM WRAPPER --- */}
                         <div className="sidebar">
-                            <div className="sidebar-tabs">
-                                <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Transação </button>
-                                <button className={`sidebar-tab-button ${sidebarTab === 'fixed' ? 'active' : ''}`} onClick={() => setSidebarTab('fixed')}> Fixos </button>
-                                <button className={`sidebar-tab-button ${sidebarTab === 'budget' ? 'active' : ''}`} onClick={() => setSidebarTab('budget')}> Orçamentos </button>
-                                <button className={`sidebar-tab-button ${sidebarTab === 'goal' ? 'active' : ''}`} onClick={() => setSidebarTab('goal')}> Metas </button>
-                            </div>
                             
-                            <div className="sidebar-content-container">
-                                {sidebarTab === 'transaction' && ( <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} /> )}
-                                {sidebarTab === 'fixed' && ( <FixedExpensesManager categories={categories} onAddFixedExpense={handleAddFixedExpense} fixedExpenses={fixedExpenses} onDeleteFixedExpense={handleDeleteFixedExpense} onEditFixedExpense={openEditFixedExpenseModal} /> )}
-                                {sidebarTab === 'budget' && ( <BudgetManager categories={categories} currentMonth={currentMonth} budgets={budgets} /> )}
-                                {sidebarTab === 'goal' && ( <GoalManager /> )} 
+                            {/* Novo Wrapper para conectar Abas e Conteúdo */}
+                            <div className="sidebar-main-widget">
+                                <div className="sidebar-tabs">
+                                    <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Transação </button>
+                                    <button className={`sidebar-tab-button ${sidebarTab === 'fixed' ? 'active' : ''}`} onClick={() => setSidebarTab('fixed')}> Fixos </button>
+                                    <button className={`sidebar-tab-button ${sidebarTab === 'budget' ? 'active' : ''}`} onClick={() => setSidebarTab('budget')}> Orçamentos </button>
+                                    <button className={`sidebar-tab-button ${sidebarTab === 'goal' ? 'active' : ''}`} onClick={() => setSidebarTab('goal')}> Metas </button>
+                                </div>
+                                <div className="sidebar-content-container">
+                                    {sidebarTab === 'transaction' && ( <TransactionForm categories={categories} onAddTransaction={handleAddTransaction} type={formType} setType={setFormType} /> )}
+                                    {sidebarTab === 'fixed' && ( <FixedExpensesManager categories={categories} onAddFixedExpense={handleAddFixedExpense} fixedExpenses={fixedExpenses} onDeleteFixedExpense={handleDeleteFixedExpense} onEditFixedExpense={openEditFixedExpenseModal} /> )}
+                                    {sidebarTab === 'budget' && ( <BudgetManager categories={categories} currentMonth={currentMonth} budgets={budgets} /> )}
+                                    {sidebarTab === 'goal' && ( <GoalManager /> )} 
+                                </div>
                             </div>
+                            {/* Fim do Wrapper */}
 
                             <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
-                            
                             <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
-                            
                             <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/> 
                         </div>
 
                         <div className="content">
                             <div className="charts-grid">
                                 <div className="chart-item" onClick={() => handleChartClick('income')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de ganhos">
-                                    <h4>Ganhos por Categoria</h4>
-                                    {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum ganho neste mês.</p>}
+                                    <h4>Recebimentos por Categoria</h4>
+                                    {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum recebimento neste mês.</p>}
                                 </div>
-                                <div className="chart-item" onClick={() => handleChartClick('expense')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de gastos">
-                                    <h4>Gastos por Categoria</h4>
-                                    {expenseChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum gasto neste mês.</p>}
+                                <div className="chart-item" onClick={() => handleChartClick('expense')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de despesas">
+                                    <h4>Despesas por Categoria</h4>
+                                    {expenseChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhuma despesa neste mês.</p>}
                                 </div>
                             </div>
-
                             <div className="transaction-view-tabs">
                                 <button className={`tab-button ${transactionViewTab === 'monthly' ? 'active' : ''}`} onClick={() => setTransactionViewTab('monthly')}> Transações do Mês </button>
-                                <button className={`tab-button ${transactionViewTab === 'fixed' ? 'active' : ''}`} onClick={() => setTransactionViewTab('fixed')}> Gastos Fixos Previstos </button>
+                                <button className={`tab-button ${transactionViewTab === 'fixed' ? 'active' : ''}`} onClick={() => setTransactionViewTab('fixed')}> Despesas Fixas Previstas </button>
                             </div>
-
                             <div className="list-container" ref={transactionListRef}>
                                 <div className="list-container-header">
-                                    <h3>{transactionViewTab === 'monthly' ? 'Transações do Mês' : 'Gastos Fixos Previstos'}</h3>
+                                    <h3>{transactionViewTab === 'monthly' ? 'Transações do Mês' : 'Despesas Fixas Previstas'}</h3>
                                     <div className="transaction-list-filters">
                                         <input type="text" placeholder="🔍 Filtrar por descrição..." value={descriptionFilter} onChange={(e) => setDescriptionFilter(e.target.value)} className="filter-input description-filter" />
                                         <Select options={typeFilterOptions} value={typeFilter} onChange={setTypeFilter} className="filter-input type-filter" classNamePrefix="react-select" />
