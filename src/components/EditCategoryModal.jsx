@@ -27,6 +27,7 @@ const EditCategoryModal = ({ isOpen, onClose, category, onSave }) => {
                 <h4>Editar Categoria</h4>
                 <form onSubmit={handleSubmit} className="auth-form" style={{ gap: '25px' }}> 
 
+                    {/* A CLASSE ABAIXO É CRUCIAL PARA O CSS FUNCIONAR */}
                     <div className="edit-category-inline-form">
                         <input
                             type="text"

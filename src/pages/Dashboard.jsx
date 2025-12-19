@@ -524,11 +524,11 @@ const Dashboard = () => {
                     </div>
                     <div className="main-layout">
                         
-                        {/* --- SIDEBAR CORRIGIDA COM WRAPPER --- */}
+                        {/* --- SIDEBAR REESTRUTURADA COM WRAPPERS EXPLICITOS --- */}
                         <div className="sidebar">
                             
-                            {/* Novo Wrapper para conectar Abas e Conteúdo */}
-                            <div className="sidebar-main-widget">
+                            {/* WRAPPER 1: Abas e Conteúdo do Formulário */}
+                            <div className="sidebar-block sidebar-main-widget">
                                 <div className="sidebar-tabs">
                                     <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Transação </button>
                                     <button className={`sidebar-tab-button ${sidebarTab === 'fixed' ? 'active' : ''}`} onClick={() => setSidebarTab('fixed')}> Fixos </button>
@@ -542,11 +542,21 @@ const Dashboard = () => {
                                     {sidebarTab === 'goal' && ( <GoalManager /> )} 
                                 </div>
                             </div>
-                            {/* Fim do Wrapper */}
 
-                            <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
-                            <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
-                            <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/> 
+                            {/* WRAPPER 2: Categorias */}
+                            <div className="sidebar-block">
+                                <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
+                            </div>
+
+                            {/* WRAPPER 3: Orçamentos */}
+                            <div className="sidebar-block">
+                                <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
+                            </div>
+
+                            {/* WRAPPER 4: Metas */}
+                            <div className="sidebar-block">
+                                <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/> 
+                            </div>
                         </div>
 
                         <div className="content">
