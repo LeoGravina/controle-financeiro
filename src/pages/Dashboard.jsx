@@ -28,16 +28,29 @@ import AddFundsToGoalModal from '../components/AddFundsToGoalModal';
 import ActionModal from '../components/ActionModal'; 
 import WithdrawFromGoalModal from '../components/WithdrawFromGoalModal'; 
 
+// Tooltip customizado
 const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
         const data = payload[0];
         const percent = (data.payload.percent * 100);
         return (
-            <div className="custom-tooltip">
-                <p className="label">{`${data.name}`}</p>
-                <p className="value">{`Valor: ${data.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}</p>
+            <div className="custom-tooltip" style={{ 
+                backgroundColor: '#fff', 
+                padding: '12px', 
+                border: '1px solid #e0e0e0', 
+                borderRadius: '8px', 
+                boxShadow: '0 4px 10px rgba(0,0,0,0.1)' 
+            }}>
+                <p className="label" style={{ margin: '0 0 5px 0', fontWeight: '700', color: '#333', fontSize: '1rem' }}>
+                    {`${data.name}`}
+                </p>
+                <p className="value" style={{ margin: 0, color: '#6a82fb', fontWeight: '600', fontSize: '0.95rem' }}>
+                    {`Valor: ${data.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}
+                </p>
                 {typeof percent === 'number' && !isNaN(percent) && (
-                    <p className="percent">{`Percentual: ${percent.toFixed(1)}%`}</p>
+                    <p className="percent" style={{ margin: '5px 0 0 0', color: '#888', fontSize: '0.85rem' }}>
+                        {`Representatividade: ${percent.toFixed(1)}%`}
+                    </p>
                 )}
             </div>
         );
@@ -485,11 +498,47 @@ const Dashboard = () => {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                          <div className="chart-item">
                             <h4>Recebimentos por Categoria</h4>
-                            {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum recebimento neste mês.</p>}
+                            {incomeChartData.length > 0 ? ( 
+                                <ResponsiveContainer width="100%" height={250}> 
+                                    <PieChart> 
+                                        <Pie 
+                                            data={incomeChartData} 
+                                            dataKey="value" 
+                                            nameKey="name" 
+                                            cx="50%" 
+                                            cy="50%" 
+                                            outerRadius={80}
+                                            isAnimationActive={false} /* Remove animação para não piscar */
+                                            label={({ percent }) => `${(percent * 100).toFixed(0)}%`} 
+                                        > 
+                                            {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} 
+                                        </Pie> 
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} /> 
+                                    </PieChart> 
+                                </ResponsiveContainer> 
+                            ) : <p className="empty-message">Nenhum recebimento neste mês.</p>}
                          </div>
                          <div className="chart-item">
                             <h4>Despesas por Categoria</h4>
-                            {expenseChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum gasto neste mês.</p>}
+                            {expenseChartData.length > 0 ? ( 
+                                <ResponsiveContainer width="100%" height={250}> 
+                                    <PieChart> 
+                                        <Pie 
+                                            data={expenseChartData} 
+                                            dataKey="value" 
+                                            nameKey="name" 
+                                            cx="50%" 
+                                            cy="50%" 
+                                            outerRadius={80} 
+                                            isAnimationActive={false} /* Remove animação para não piscar */
+                                            label={({ percent }) => `${(percent * 100).toFixed(0)}%`} 
+                                        > 
+                                            {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} 
+                                        </Pie> 
+                                        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} /> 
+                                    </PieChart> 
+                                </ResponsiveContainer> 
+                            ) : <p className="empty-message">Nenhuma despesa neste mês.</p>}
                         </div>
                     </div>
                 )}
@@ -519,15 +568,15 @@ const Dashboard = () => {
                     <div className="summary-grid">
                         <SummaryCard title="Recebimentos do Mês" value={incomeTotal} type="income" onClick={() => handleCardFilterAndScroll('income')} isActive={typeFilter.value === 'income'} data-tooltip="Filtrar lista: Mostrar apenas Recebimentos" />
                         <SummaryCard title="Despesas Pagas" value={expensePaid} type="expense" onClick={() => handleCardFilterAndScroll('paidExpense')} isActive={typeFilter.value === 'paidExpense'} data-tooltip="Filtrar lista: Mostrar apenas Despesas Pagas" />
-                        <SummaryCard title="Despesas a Pagar" value={expenseToPay} type="expense" onClick={() => handleCardFilterAndScroll('toPayExpense')} isActive={typeFilter.value === 'toPayExpense'} data-tooltip="Filtrar lista: Mostrar apenas Despesas a Pagar" />
+                        <SummaryCard title="Despesas a Pagar" value={expenseToPay} type="pending" onClick={() => handleCardFilterAndScroll('toPayExpense')} isActive={typeFilter.value === 'toPayExpense'} data-tooltip="Filtrar lista: Mostrar apenas Despesas a Pagar" />
                         <SummaryCard title="Saldo (Receb. - Pagos)" value={balance} type="balance" data-tooltip="Saldo do Mês (Recebimentos - Despesas Pagas)" />
                     </div>
                     <div className="main-layout">
                         
-                        {/* --- SIDEBAR REESTRUTURADA COM WRAPPERS EXPLICITOS --- */}
+                        {/* --- SIDEBAR REESTRUTURADA --- */}
                         <div className="sidebar">
                             
-                            {/* WRAPPER 1: Abas e Conteúdo do Formulário */}
+                            {/* Bloco 1: Abas e Formulários */}
                             <div className="sidebar-block sidebar-main-widget">
                                 <div className="sidebar-tabs">
                                     <button className={`sidebar-tab-button ${sidebarTab === 'transaction' ? 'active' : ''}`} onClick={() => setSidebarTab('transaction')}> Transação </button>
@@ -543,19 +592,23 @@ const Dashboard = () => {
                                 </div>
                             </div>
 
-                            {/* WRAPPER 2: Categorias */}
+                            {/* Bloco 2: Categorias */}
                             <div className="sidebar-block">
                                 <CategoryManager categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={(id) => handleDeleteRequest(id, 'category')} onEditCategory={openEditCategoryModal} />
                             </div>
 
-                            {/* WRAPPER 3: Orçamentos */}
+                            {/* Bloco 3: Orçamentos (COM SCROLL WRAPPER) */}
                             <div className="sidebar-block">
-                                <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
+                                <div className="sidebar-scroll-wrapper">
+                                    <BudgetProgressList budgets={budgets} expensesByCategory={expensesByCategory} />
+                                </div>
                             </div>
 
-                            {/* WRAPPER 4: Metas */}
+                            {/* Bloco 4: Metas (COM SCROLL WRAPPER) */}
                             <div className="sidebar-block">
-                                <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/> 
+                                <div className="sidebar-scroll-wrapper">
+                                    <GoalProgressList goals={goals} onAddFundsClick={openAddFundsModal} onWithdrawFundsClick={openWithdrawModal}/> 
+                                </div>
                             </div>
                         </div>
 
@@ -563,11 +616,47 @@ const Dashboard = () => {
                             <div className="charts-grid">
                                 <div className="chart-item" onClick={() => handleChartClick('income')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de ganhos">
                                     <h4>Recebimentos por Categoria</h4>
-                                    {incomeChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={incomeChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhum recebimento neste mês.</p>}
+                                    {incomeChartData.length > 0 ? ( 
+                                        <ResponsiveContainer width="100%" height={250}> 
+                                            <PieChart> 
+                                                <Pie 
+                                                    data={incomeChartData} 
+                                                    dataKey="value" 
+                                                    nameKey="name" 
+                                                    cx="50%" 
+                                                    cy="50%" 
+                                                    outerRadius={80} 
+                                                    isAnimationActive={false} /* Sem animação */
+                                                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`} 
+                                                > 
+                                                    {incomeChartData.map((entry) => <Cell key={`cell-income-${entry.name}`} fill={entry.color} />)} 
+                                                </Pie> 
+                                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} /> 
+                                            </PieChart> 
+                                        </ResponsiveContainer> 
+                                    ) : <p className="empty-message">Nenhum recebimento neste mês.</p>}
                                 </div>
                                 <div className="chart-item" onClick={() => handleChartClick('expense')} style={{ cursor: 'pointer' }} data-tooltip="Ir para página de relatório de despesas">
                                     <h4>Despesas por Categoria</h4>
-                                    {expenseChartData.length > 0 ? ( <ResponsiveContainer width="100%" height={250}> <PieChart> <Pie data={expenseChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}> {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} </Pie> <Tooltip content={<CustomTooltip />} /> </PieChart> </ResponsiveContainer> ) : <p className="empty-message">Nenhuma despesa neste mês.</p>}
+                                    {expenseChartData.length > 0 ? ( 
+                                        <ResponsiveContainer width="100%" height={250}> 
+                                            <PieChart> 
+                                                <Pie 
+                                                    data={expenseChartData} 
+                                                    dataKey="value" 
+                                                    nameKey="name" 
+                                                    cx="50%" 
+                                                    cy="50%" 
+                                                    outerRadius={80} 
+                                                    isAnimationActive={false} /* Sem animação */
+                                                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`} 
+                                                > 
+                                                    {expenseChartData.map((entry) => <Cell key={`cell-expense-${entry.name}`} fill={entry.color} />)} 
+                                                </Pie> 
+                                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} /> 
+                                            </PieChart> 
+                                        </ResponsiveContainer> 
+                                    ) : <p className="empty-message">Nenhuma despesa neste mês.</p>}
                                 </div>
                             </div>
                             <div className="transaction-view-tabs">

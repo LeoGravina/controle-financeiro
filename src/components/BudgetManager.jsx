@@ -1,102 +1,47 @@
-// ATUALIZADO: src/components/BudgetManager.jsx
-// - REMOVIDO o estado interno de 'budgets'.
-// - REMOVIDO 'fetchBudgets' e seu 'useEffect'.
-// - O componente agora recebe 'budgets' como prop (vinda do Dashboard).
-// - Funções de Add/Update/Delete não precisam mais de 'setBudgets' (o onSnapshot do Dashboard cuida disso).
-import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc } from 'firebase/firestore'; 
-import { db, auth } from '../firebase/config'; 
+import React, { useState, useMemo } from 'react';
+import { addDoc, collection, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { db, auth } from '../firebase/config';
 import Select from 'react-select';
-import CurrencyInput from './CurrencyInput';
-import { FaTimes } from 'react-icons/fa'; 
-import EditBudgetModal from './EditBudgetModal';
+import CurrencyInput from './CurrencyInput'; 
+import { FaTimes } from 'react-icons/fa';
+import EditBudgetModal from './EditBudgetModal'; 
 
-// 1. Recebe 'budgets' como prop
 const BudgetManager = ({ categories = [], currentMonth, budgets = [] }) => {
-    
-    // 2. REMOVIDO: const [budgets, setBudgets] = useState([]); 
-    // 3. REMOVIDO: const [loading, setLoading] = useState(true); 
-
-    const [selectedCategoryToAdd, setSelectedCategoryToAdd] = useState(null); 
-    const [addAmount, setAddAmount] = useState(''); 
+    const [selectedCategoryToAdd, setSelectedCategoryToAdd] = useState(null);
+    const [addAmount, setAddAmount] = useState('');
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingBudget, setEditingBudget] = useState(null);
 
     const user = auth.currentUser;
-    const month = currentMonth.getMonth();
-    const year = currentMonth.getFullYear();
+    
+    // Função auxiliar para pegar a cor da categoria
+    const getCategoryColor = (categoryName) => {
+        const cat = categories.find(c => c.name === categoryName);
+        return cat ? cat.color : '#bdc3c7'; // Retorna cinza se não achar
+    };
 
-    // 4. REMOVIDO: a função 'fetchBudgets'
-    // 5. REMOVIDO: o 'useEffect' que chamava 'fetchBudgets'
-
-    // Opções para o Select (sem alteração, agora usa a prop 'budgets')
     const categoryOptionsToAdd = useMemo(() => {
         const budgetedCategoryNames = budgets.map(b => b.categoryName);
         return categories
-            .filter(cat => !budgetedCategoryNames.includes(cat.name)) 
-            .map(cat => ({ value: cat.name, label: cat.name })) 
+            .filter(cat => !budgetedCategoryNames.includes(cat.name))
+            .map(cat => ({ value: cat.name, label: cat.name, color: cat.color }))
             .sort((a, b) => a.label.localeCompare(b.label));
-    }, [categories, budgets]); // Depende da prop 'budgets'
+    }, [categories, budgets]);
 
-    
-    // Funções do Modal (sem alteração)
-    const openEditModal = (budget) => {
-        setEditingBudget(budget);
-        setIsEditModalOpen(true);
-    };
-    const closeEditModal = () => {
-        setEditingBudget(null);
-        setIsEditModalOpen(false);
-    };
-
-    // Função para SALVAR o orçamento
-    const handleUpdateBudget = async (updatedBudget) => {
-        if (!user || !updatedBudget || !updatedBudget.id) {
-            alert("Erro: Orçamento inválido.");
-            return;
-        }
-        
-        const newLimit = parseFloat(updatedBudget.limitAmount);
-        const budgetRef = doc(db, 'budgets', updatedBudget.id);
-
-        try {
-            await updateDoc(budgetRef, { limitAmount: newLimit });
-            // 6. REMOVIDO: setBudgets(...) 
-            // O onSnapshot do Dashboard vai atualizar a prop
-            closeEditModal(); 
-        } catch (error) {
-            console.error("Erro ao atualizar orçamento:", error);
-            alert("Erro ao salvar. Tente novamente.");
-        }
-    };
-
-
-    // Função para ADICIONAR um novo orçamento
     const handleAddBudget = async (e) => {
         e.preventDefault();
-        // ... (validação)
         if (!user || !selectedCategoryToAdd || addAmount === '' || parseFloat(addAmount) <= 0) {
             alert("Selecione uma categoria e insira um limite válido.");
-            return;
-        }
-
-        const categoryName = selectedCategoryToAdd.value;
-        const limitAmount = parseFloat(addAmount);
-
-        // ... (validação 'existing')
-        const existing = budgets.find(b => b.categoryName === categoryName);
-        if (existing) {
-            alert("Já existe um orçamento para esta categoria neste mês.");
             return;
         }
 
         try {
             await addDoc(collection(db, 'budgets'), {
                 userId: user.uid,
-                categoryName,
-                month,
-                year,
-                limitAmount
+                categoryName: selectedCategoryToAdd.value,
+                month: currentMonth.getMonth(),
+                year: currentMonth.getFullYear(),
+                limitAmount: parseFloat(addAmount)
             });
             setSelectedCategoryToAdd(null);
             setAddAmount('');
@@ -106,77 +51,98 @@ const BudgetManager = ({ categories = [], currentMonth, budgets = [] }) => {
         }
     };
 
-    const handleDeleteBudget = async (e, budgetId, categoryName) => {
-        e.stopPropagation(); 
-        if (!user || !window.confirm(`Tem certeza que deseja remover o orçamento para "${categoryName}"?`)) return;
-
+    const handleUpdateBudget = async (updatedBudget) => {
+        if (!user || !updatedBudget || !updatedBudget.id) return;
         try {
-            await deleteDoc(doc(db, 'budgets', budgetId));
+            const budgetRef = doc(db, 'budgets', updatedBudget.id);
+            await updateDoc(budgetRef, { limitAmount: parseFloat(updatedBudget.limitAmount) });
+            setEditingBudget(null);
+            setIsEditModalOpen(false);
         } catch (error) {
-            console.error("Erro ao remover orçamento:", error);
-            alert("Erro ao remover. Tente novamente.");
+            console.error("Erro ao atualizar:", error);
+            alert("Erro ao salvar.");
         }
-    }
+    };
 
-    // 9. REMOVIDO: a checagem de 'loading' e 'user' (o Dashboard já faz isso)
+    const handleDeleteBudget = async (e, budgetId, categoryName) => {
+        e.stopPropagation(); // Evita abrir o modal ao clicar no X
+        if (window.confirm(`Remover orçamento de "${categoryName}"?`)) {
+            try {
+                await deleteDoc(doc(db, 'budgets', budgetId));
+            } catch (error) {
+                console.error("Erro ao deletar:", error);
+            }
+        }
+    };
+
+    const openEditModal = (budget) => {
+        setEditingBudget(budget);
+        setIsEditModalOpen(true);
+    };
 
     return (
         <>
-            <EditBudgetModal 
-                isOpen={isEditModalOpen}
-                onClose={closeEditModal}
-                budget={editingBudget}
-                onSave={handleUpdateBudget}
-            />
+            {isEditModalOpen && (
+                <EditBudgetModal 
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    budget={editingBudget}
+                    onSave={handleUpdateBudget}
+                />
+            )}
 
-            <div className="budget-manager">
+            <div className="budget-manager card-style">
                 <h4>Adicionar Orçamento</h4>
-                <form onSubmit={handleAddBudget} className="budget-add-form">
+                <form onSubmit={handleAddBudget} className="budget-add-form" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                     <Select
                         options={categoryOptionsToAdd}
                         value={selectedCategoryToAdd}
                         onChange={setSelectedCategoryToAdd}
                         placeholder="-- Categoria --"
-                        className="react-select-container budget-category-select"
                         classNamePrefix="react-select"
-                        // 'budgets' e 'categories' agora são props e estão sempre em sincronia
                         noOptionsMessage={() => "Todas as categorias já têm orçamento"}
-                        required
                     />
                     <CurrencyInput 
                         value={addAmount} 
                         onChange={setAddAmount} 
                         placeholder="Limite (R$)"
-                        required
-                        aria-label="Limite do Orçamento"
+                        className="currency-input"
                     />
-                    <button type="submit" className="submit-button budget-add-button">
+                    <button type="submit" className="submit-button" style={{ width: '100%' }}>
                         Adicionar
                     </button>
                 </form>
 
-                <h4 style={{ marginTop: '30px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
+                <h4 style={{ marginTop: '30px', borderTop: '1px solid #eee', paddingTop: '20px' }}>
                     Orçamentos do Mês
                 </h4>
-                {/* A prop 'budgets' é usada aqui */}
+                
                 {budgets.length === 0 ? (
-                    <p className="empty-message">Nenhum orçamento definido para este mês.</p>
+                    <p style={{ color: '#999', fontStyle: 'italic' }}>Nenhum orçamento definido.</p>
                 ) : (
-                    // E aqui
                     <ul className="budget-list">
                         {budgets.sort((a,b) => a.categoryName.localeCompare(b.categoryName)).map(budget => (
                             <li 
                                 key={budget.id} 
                                 onClick={() => openEditModal(budget)}
-                                className={'editable'}
-                                title={`Editar orçamento de ${budget.categoryName}`}
+                                style={{
+                                    backgroundColor: getCategoryColor(budget.categoryName),
+                                    // Removemos transform/transition inline para usar o do CSS
+                                }}
+                                title="Clique para editar"
                             >
-                                <span className="budget-category-name">{budget.categoryName}</span>
-                                <span className="budget-limit-amount">
-                                    {budget.limitAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                                </span>
-                                <div className="budget-actions">
-                                     <button onClick={(e) => handleDeleteBudget(e, budget.id, budget.categoryName)} className="action-button delete" title="Remover"> <FaTimes /> </button>
+                                <span>{budget.categoryName}</span>
+                                
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                    <span style={{ fontWeight: '500', fontSize: '0.95rem' }}>
+                                        {budget.limitAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                    </span>
+                                    <button 
+                                        onClick={(e) => handleDeleteBudget(e, budget.id, budget.categoryName)}
+                                        title="Remover orçamento"
+                                    >
+                                        <FaTimes />
+                                    </button>
                                 </div>
                             </li>
                         ))}
