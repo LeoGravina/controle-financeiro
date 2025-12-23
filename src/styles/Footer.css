@@ -1,0 +1,47 @@
+/* src/styles/Footer.css */
+
+.footer-container {
+    /* COR NOVA: Um cinza platina suave, muito elegante */
+    background-color: #e9ecef; 
+    border-top: 1px solid #dee2e6; /* Borda um pouco mais visível para separar */
+    color: #6c757d; /* Texto cinza chumbo */
+    padding: 1.5rem 0;
+    text-align: center;
+    width: 100%;
+    margin-top: auto;
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* Destaque sutil para o seu nome */
+.footer-text strong {
+    color: #495057; 
+    font-weight: 700;
+}
+
+.footer-separator {
+    color: #adb5bd;
+}
+
+.footer-link {
+    color: #6c757d;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Hover roxo para combinar com o site */
+.footer-link:hover {
+    color: #5a67d8; 
+    text-decoration: none;
+}

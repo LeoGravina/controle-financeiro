@@ -1,0 +1,95 @@
+/* src/styles/ContatoPage.css */
+
+.contato-page-content {
+    background-color: #f0f2f5; 
+    
+    /* ADEUS CALC! */
+    /* flex: 1 faz a div crescer automaticamente para ocupar TODO o espaço branco */
+    flex: 1; 
+    width: 100%;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    color: #2d3748;
+}
+
+/* O restante do arquivo continua igual... */
+.contato-card {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+    border: 1px solid #e2e8f0;
+}
+
+.contato-title {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    color: #1a202c;
+    font-weight: 700;
+}
+
+.contato-subtitle {
+    font-size: 1.1rem;
+    color: #718096;
+    margin-bottom: 30px;
+}
+
+.contato-info-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.contato-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 12px;
+    background-color: #f7fafc;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #4a5568;
+    transition: transform 0.2s, background-color 0.2s, color 0.2s;
+    border-left: 4px solid transparent; 
+}
+
+.contato-item svg {
+    color: #718096;
+    transition: color 0.2s;
+}
+
+/* Hover com efeito Roxo na esquerda */
+.contato-item:hover {
+    background-color: #edf2f7;
+    transform: translateX(5px);
+    border-left: 4px solid #5a67d8; /* Roxo */
+    color: #5a67d8;
+}
+
+.contato-item:hover svg {
+    color: #5a67d8;
+}
+
+.secondary-btn {
+    background-color: transparent;
+    border: 1px solid #5a67d8;
+    color: #5a67d8;
+    padding: 10px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s;
+    font-weight: 600;
+}
+
+.secondary-btn:hover {
+    background-color: #5a67d8;
+    color: white;
+}

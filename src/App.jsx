@@ -1,21 +1,25 @@
-// ATUALIZADO: src/App.jsx
+// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase/config'; // Caminho Corrigido
+import { auth } from './firebase/config';
 
 // Importando Páginas
+import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
-// 1. Importa a nova página (que criaremos a seguir)
-import ReportPage from './pages/ReportPage'; 
+import ReportPage from './pages/ReportPage';
+import ContatoPage from './pages/ContatoPage'; //
+
+// Importando Componentes
+import Footer from './components/Footer'; // O componente que criamos para o rodapé
 
 // Importando Estilos
 import './styles/Auth.css';
 import './styles/Dashboard.css';
+// import './styles/LandingPage.css';
 
-// Componente para Rotas Protegidas
 const ProtectedRoute = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,19 +29,15 @@ const ProtectedRoute = ({ children }) => {
       setUser(currentUser);
       setLoading(false);
     });
-    // Limpa o listener ao desmontar
     return () => unsubscribe();
   }, []);
 
-  if (loading) {
-    return <div>Carregando...</div>; // Pode ser um spinner
-  }
-
-  // Se não estiver logado, redireciona para o login
+  if (loading) return <div>Carregando...</div>;
+  
+  // Se NÃO estiver logado, manda pro login
   return user ? children : <Navigate to="/login" />;
 };
 
-// Componente para Rotas Públicas (Login/Cadastro)
 const PublicRoute = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -50,51 +50,46 @@ const PublicRoute = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  if (loading) {
-    return <div>Carregando...</div>;
-  }
+  if (loading) return <div>Carregando...</div>;
   
-  // Se estiver logado, redireciona para o dashboard
-  return user ? <Navigate to="/" /> : children;
+  // Se JÁ estiver logado, manda pro dashboard (/app) ao invés da home
+  return user ? <Navigate to="/app" /> : children;
 };
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/report"
-          element={
-            <ProtectedRoute>
-              <ReportPage />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/contato" element={<ContatoPage />} />
+            <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+            <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+            
+            <Route 
+              path="/app" 
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/report" 
+              element={
+                <ProtectedRoute>
+                  <ReportPage />
+                </ProtectedRoute>
+              } 
+            />
+          </Routes>
+        </div>
+
+        <Footer />
+        
+      </div>
     </BrowserRouter>
   );
 }
