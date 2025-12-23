@@ -83,13 +83,12 @@ const typeFilterOptions = [
 const createDefaultCategories = async (userId) => {
     const batch = writeBatch(db);
     const defaultCategories = [
-        { name: 'Metas', color: '#6a82fb', userId: userId },
+        { name: 'Saúde', color: '#1aaaceff', userId: userId },
         { name: 'Alimentação', color: '#f39c12', userId: userId },
-        { name: 'Transporte', color: '#3498db', userId: userId },
-        { name: 'Lazer', color: '#2ecc71', userId: userId },
+        { name: 'Transporte', color: '#202529ff', userId: userId },
         { name: 'Moradia', color: '#9b59b6', userId: userId },
         { name: 'Salário', color: '#1abc9c', userId: userId },
-        { name: 'Outros', color: '#bdc3c7', userId: userId }
+        { name: 'Educação', color: '#dac968ff', userId: userId },
     ];
     defaultCategories.forEach(cat => {
         const newCatRef = doc(collection(db, 'categories'));
