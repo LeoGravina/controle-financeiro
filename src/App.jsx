@@ -10,16 +10,16 @@ import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ReportPage from './pages/ReportPage';
-import ContatoPage from './pages/ContatoPage'; //
+import ContatoPage from './pages/ContatoPage';
 
-// Importando Componentes
-import Footer from './components/Footer'; // O componente que criamos para o rodapé
+// Importando Componentes Globais
+import Footer from './components/Footer';
 
 // Importando Estilos
 import './styles/Auth.css';
 import './styles/Dashboard.css';
-// import './styles/LandingPage.css';
 
+// --- COMPONENTES DE ROTA ---
 const ProtectedRoute = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,9 +32,8 @@ const ProtectedRoute = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  if (loading) return <div>Carregando...</div>;
+  if (loading) return <div style={{display:'flex', justifyContent:'center', marginTop:'50px'}}>Carregando...</div>;
   
-  // Se NÃO estiver logado, manda pro login
   return user ? children : <Navigate to="/login" />;
 };
 
@@ -50,9 +49,8 @@ const PublicRoute = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
-  if (loading) return <div>Carregando...</div>;
+  if (loading) return null; 
   
-  // Se JÁ estiver logado, manda pro dashboard (/app) ao invés da home
   return user ? <Navigate to="/app" /> : children;
 };
 
@@ -64,10 +62,12 @@ function App() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <Routes>
             <Route path="/" element={<LandingPage />} />
+
             <Route path="/contato" element={<ContatoPage />} />
+
             <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-            
+
             <Route 
               path="/app" 
               element={
@@ -84,9 +84,13 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            
+            {/* Rota Coringa: Se digitar qualquer coisa errada, volta pra Landing Page */}
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
 
+        {/* Footer Global */}
         <Footer />
         
       </div>
