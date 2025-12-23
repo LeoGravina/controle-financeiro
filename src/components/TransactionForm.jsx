@@ -1,4 +1,6 @@
+// src/components/TransactionForm.jsx
 import React, { useState, useEffect, useMemo } from 'react';
+import { useFinance } from '../contexts/FinanceContext'; // Importe do contexto
 import CurrencyInput from './CurrencyInput';
 import { FaArrowUp, FaArrowDown } from 'react-icons/fa'; 
 import Select from 'react-select';
@@ -12,7 +14,10 @@ const paymentMethodOptions = [
     { value: 'pix', label: 'Pix' }
 ];
 
-const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) => {
+const TransactionForm = ({ type, setType }) => {
+    // Pegamos categories e a função de adicionar diretamente do contexto
+    const { categories, addTransaction } = useFinance();
+
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [date, setDate] = useState(getTodayString()); 
@@ -20,6 +25,7 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
     const [paymentMethod, setPaymentMethod] = useState(null);
     const [isInstallment, setIsInstallment] = useState(false);
     const [installments, setInstallments] = useState(2);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const categoryOptions = useMemo(() =>
         categories
@@ -35,30 +41,46 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
         }
     }, [paymentMethod]);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!description.trim() || !amount || parseFloat(amount) <= 0 || !category || !paymentMethod) {
+            // Opcional: usar toast.warn aqui
             alert("Por favor, preencha todos os campos obrigatórios.");
             return;
         }
 
+        setIsSubmitting(true);
+
         const selectedCategoryName = category ? category.label : 'Outros';
         const selectedPaymentMethod = paymentMethod ? paymentMethod.value : '';
 
-        onAddTransaction({
-            description: description.trim(),
-            amount: parseFloat(amount),
-            date: new Date(date + 'T12:00:00'), 
-            type,
-            category: selectedCategoryName,
-            paymentMethod: selectedPaymentMethod,
-            isInstallment: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment,
-            installments: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment ? installments : 1,
-            isPaid: false
-        });
+        try {
+            await addTransaction({
+                description: description.trim(),
+                amount: parseFloat(amount),
+                date: new Date(date + 'T12:00:00'), 
+                type,
+                category: selectedCategoryName,
+                paymentMethod: selectedPaymentMethod,
+                isInstallment: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment,
+                installments: type === 'expense' && ['credit', 'debit', 'pix'].includes(selectedPaymentMethod) && isInstallment ? installments : 1,
+                isPaid: false
+            });
 
-        setDescription(''); setAmount(''); setDate(getTodayString()); setIsInstallment(false);
-        setCategory(null); setPaymentMethod(null);
+            // Limpa o form após sucesso
+            setDescription(''); 
+            setAmount(''); 
+            setDate(getTodayString()); 
+            setIsInstallment(false);
+            setCategory(null); 
+            setPaymentMethod(null);
+            setInstallments(2);
+
+        } catch (error) {
+            // Erro já tratado no contexto (toast), mas liberamos o botão
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -71,7 +93,6 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
                         value={date} 
                         onChange={(e) => setDate(e.target.value)} 
                         required 
-                        aria-label="Data da transação"
                     />
                 </div>
             </div>
@@ -123,7 +144,9 @@ const TransactionForm = ({ categories = [], onAddTransaction, type, setType }) =
                         )}
                     </div>
                 )}
-                <button type="submit" className="submit-button">Adicionar</button>
+                <button type="submit" className="submit-button" disabled={isSubmitting}>
+                    {isSubmitting ? 'Salvando...' : 'Adicionar'}
+                </button>
             </form>
         </div>
     );
